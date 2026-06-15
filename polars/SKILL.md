@@ -210,3 +210,8 @@ Load reference files only when the task needs detail beyond this file.
 - `references/lazy-api.md` - scan options for dirty data, query plan
   inspection with `explain()`, streaming engine for larger-than-memory
   data, `sink_parquet`.
+- `references/pandas-to-polars.md` - translating pandas code to Polars:
+  API pattern differences, datetime parsing, column renaming via
+  `Expr.name`, semi/anti joins, window vs. group_by, `pd.crosstab` →
+  `.pivot()`, and common correctness traps (division, cast, round,
+  `replace_strict`).
