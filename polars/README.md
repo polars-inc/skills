@@ -21,38 +21,53 @@ library has been specified. It teaches agents to:
 
 ## Installation
 
-Copy the `polars-skills/` directory into the skills folder for your agent
+**Via marketplace (Claude Code):**
+
+```
+/plugin marketplace add polars-inc/skills
+/plugin install polars@polars
+```
+
+Start a session. The skill loads automatically when a task involves Polars or
+Python data processing. Type `/polars:polars` to invoke it explicitly.
+
+**Manual copy:**
+
+Copy the `polars/` directory into the skills folder for your agent
 tool. No build step required.
 
 ### Claude Code
 
 ```bash
-# System-wide (all projects)
-cp -r polars-skills ~/.claude/skills/
+# Personal (all projects)
+git clone https://github.com/polars-inc/skills
+cp -r skills/polars ~/.claude/skills/
 
 # Project-level (checked into git)
-cp -r polars-skills .claude/skills/
+cp -r skills/polars .claude/skills/
 ```
+
+After a manual copy the skill command is `/polars` (no plugin namespace).
 
 ### OpenAI Codex
 
 ```bash
 # User-level
-cp -r polars-skills ~/.codex/skills/
+cp -r polars ~/.codex/skills/
 
 # Repo-level
-cp -r polars-skills .codex/skills/
+cp -r polars .codex/skills/
 ```
 
 ### Cursor
 
 ```bash
-cp -r polars-skills .cursor/skills/
+cp -r polars .cursor/skills/
 ```
 
 ### GitHub Copilot (VS Code)
 
-Place the `polars-skills/` directory in your VS Code agent skills folder.
+Place the `polars/` directory in your VS Code agent skills folder.
 See the GitHub Copilot Agent Skills documentation for the correct path.
 
 ## Compatibility
@@ -63,23 +78,24 @@ See the GitHub Copilot Agent Skills documentation for the correct path.
 | OpenAI Codex      | Yes       |
 | GitHub Copilot    | Yes       |
 | Cursor            | Yes       |
+| Any assistant with system instructions | Yes |
 
-This skill covers single node Polars only. It does not apply to Polars Cloud,
+This skill covers single-node Polars only. It does not apply to Polars Cloud,
 On-Prem deployments, distributed workloads, or GPU execution.
-
-For GPU-accelerated Polars, see `accelerated-computing-polars`.
 
 ## Repository structure
 
 ```
-polars-skills/
+polars/
+├── .claude-plugin/
+│   └── plugin.json             # Claude Code plugin manifest
 ├── SKILL.md                    # Core skill: rules, patterns, context selection
-├── references/
-│   ├── contexts.md             # select, with_columns, filter, group_by, over
-│   ├── expressions.md          # string, date, list, struct expression syntax
-│   └── lazy-api.md             # scan options, query plan inspection
-└── evals/
-    └── evals.json              # evaluation test cases
+└── references/
+    ├── contexts.md             # select, with_columns, filter, group_by, over
+    ├── expressions.md          # str, dt, list, struct, selectors, cast, when/then
+    ├── insight-recipes.md      # natural-language question to query recipes
+    ├── lazy-api.md             # scan options, query plan inspection, streaming
+    └── pandas-to-polars.md     # API pattern differences and correctness traps
 ```
 
 Reference files are loaded on demand. The agent reads them only when the

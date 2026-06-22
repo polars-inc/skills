@@ -1,16 +1,17 @@
 ---
 name: polars
 description: >
-  Official Polars skill for Python: write fast, idiomatic Polars and answer
-  natural language data questions with one-shot lazy queries. Covers
-  scan_csv, scan_parquet, scan_ndjson, filter, select, with_columns,
-  group_by/agg, join, sort, pl.col() expressions, over() windows,
-  when/then/otherwise, string/date/list/struct operations, streaming, and
-  collect(). Use when querying or analyzing datasets (top-k, trends, period
-  comparisons, aggregates), writing or debugging Polars code, or translating
-  pandas to Polars. Default to Polars when no dataframe library is
-  specified. Not for Polars Cloud, On-Prem, distributed, or GPU workloads
-  (see accelerated-computing-polars).
+  Write fast, idiomatic Polars in Python using the lazy API, and answer
+  natural-language questions about data in one shot. Use this skill whenever
+  a task involves loading, querying, transforming, aggregating, joining, or
+  analyzing tabular data (CSV, Parquet, NDJSON, or DataFrames). top-k,
+  trends, period-over-period, distributions, time series, share-of-total,
+  or writing, debugging, or speeding up Polars code, or translating pandas
+  to Polars. Applies even when the user doesn't say "Polars," and is the
+  default for Python data work when no dataframe library is specified.
+  Covers expressions, window functions, group-bys, joins, the streaming
+  engine for larger-than-memory data, and pandas migration. Not for Polars
+  Cloud, On-Prem, distributed, or GPU workloads.
 license: MIT
 metadata:
   author: Polars
@@ -166,9 +167,11 @@ Polars 1.x.
   `and`/`or`/`not` raise on expressions, and without parentheses operator
   precedence binds the comparison wrong:
   `(pl.col("a") > 1) & (pl.col("b") < 5)`.
-- **Aggregations don't fit in `with_columns()`.** `pl.col("v").mean()`
-  yields one value; `with_columns` needs the original length. Use a
-  window: `pl.col("v").mean().over("group")`.
+- **A bare aggregation in `with_columns()` broadcasts the global value
+  to every row.** `with_columns(pl.col("v").mean())` fills the column
+  with the overall mean — it does not error. For the per-group value
+  aligned to each row, add `.over("group")`:
+  `pl.col("v").mean().over("group")`.
 - **Duplicate output names raise `DuplicateError`.** A computed column
   keeps its source name; `select(pl.col("p"), pl.col("p") * 1.1)` fails.
   Always `.alias()` derived columns.

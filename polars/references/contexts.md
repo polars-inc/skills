@@ -55,9 +55,11 @@ raise `DuplicateError`; always alias derived columns.
 
 ## with_columns()
 
-Adds or replaces columns; everything else passes through. Every expression
-must produce a series matching the frame length, which is why plain
-aggregations fail here (use `over()`, below, or `select()`).
+Adds or replaces columns; everything else passes through. A plain
+aggregation like `pl.col("v").mean()` produces a scalar that Polars
+broadcasts to every row — it does not error. Use `over("group")` when
+you want the *per-group* aggregate aligned to each row instead of the
+global value.
 
 ```python
 lf.with_columns(
@@ -127,12 +129,12 @@ Aggregation building blocks:
 
 ```python
 pl.col("v").sum() / .mean() / .median() / .std() / .min() / .max()
-pl.col("v").quantile(0.95)
-pl.len()                        # rows in group, nulls included
-pl.col("v").count()             # non-null values
-pl.col("v").null_count()
-pl.col("v").n_unique()
-pl.col("v").first() / .last()   # order = current row order within group
+pl.col("v").quantile(0.95)          # e.g. 0.95 = 95th percentile
+pl.len()                            # rows in group, nulls included
+pl.col("v").count()                 # non-null values
+pl.col("v").null_count()            # null values in group
+pl.col("v").n_unique()              # distinct values in group
+pl.col("v").first() / .last()       # order = current row order within group
 pl.col("v").implode()           # collect group values into a list
 ```
 
