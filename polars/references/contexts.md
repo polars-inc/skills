@@ -4,6 +4,17 @@ Expressions are lazy descriptions of transformations. They compute nothing
 until placed in a **context**; the context determines what columns appear
 in the output, how broadcasting works, and the row count of the result.
 
+## Contents
+
+- `select()` — project or transform columns, keep only specified
+- `with_columns()` — add or replace columns, keep all others
+- `filter()` — remove rows
+- `group_by() + agg()` — aggregate per group
+- `over()` — window functions (broadcast group result to all rows)
+- `sort()` — reorder rows
+- `join()` — combine two frames
+- Putting contexts together
+
 | Context | Purpose | Keeps other columns | Row count |
 |---|---|---|---|
 | `select()` | Project/transform columns | No | Same (or 1 for aggregates) |

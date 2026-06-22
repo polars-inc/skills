@@ -1,5 +1,15 @@
 # Pandas → Polars Translation
 
+## Contents
+
+- General approach
+- API patterns
+- Parsing date/datetime strings
+- Column renaming — `Expr.name` namespace
+- Polars-specific correctness traps
+- `pd.crosstab` → `.pivot()` with `aggregate_function="len"`
+- Logic and algorithmic patterns
+
 ## General approach
 
 Before writing any code:

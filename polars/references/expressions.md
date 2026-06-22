@@ -4,6 +4,16 @@ Reference for the `str`, `dt`, `list`, and `struct` namespaces, `pl.selectors`,
 casting, and `when/then/otherwise`. Load this file when a task involves text
 processing, date/time arithmetic, nested data, or multi-type column selection.
 
+## Contents
+
+- String — `str.*` (includes parsing strings to dates/datetimes)
+- Temporal — `dt.*` (includes window grouping on timestamps)
+- List — `list.*`
+- Struct — `struct.*`
+- Selectors — `polars.selectors`
+- Casting
+- `when / then / otherwise`
+
 ---
 
 ## String — `str.*`

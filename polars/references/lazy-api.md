@@ -6,6 +6,16 @@ predicate pushdown (filters applied during the scan), projection pushdown
 elimination, and automatic parallelism. This is why queries start with
 `scan_*` and end with a single `collect()`.
 
+## Contents
+
+- Starting a lazy query
+- Scan options that prevent downstream pain
+- Schema discovery without reading data
+- Inspecting the plan
+- Executing
+- Larger-than-memory: streaming and sinks
+- Composition pattern
+
 ## Starting a lazy query
 
 ```python
