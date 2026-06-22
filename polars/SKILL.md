@@ -80,7 +80,7 @@ print(lf.head(5).collect())          # eyeball values, formats, dirt
    follow-up questions; keep the LazyFrame around and extend the chain
    instead of rebuilding from scratch.
 
-Load `references/insight-recipes.md` for ready-made query shapes (top-k,
+Read `references/insight-recipes.md` first for ready-made query shapes (top-k,
 period-over-period, distributions, time series, cohort-style questions).
 
 ## Core rules
@@ -200,11 +200,18 @@ installed version rather than memory:
 
 ## When to load references
 
-Load reference files only when the task needs detail beyond this file.
+These reference files hold detail that is NOT in this file. When a task matches one
+below, you MUST read that reference before writing code — do not translate or answer
+from memory when a reference covers the task. Each file opens with a `## Contents`
+index; use it to read the whole file or jump to the relevant section.
 
-- `references/insight-recipes.md` - natural language question to query:
-  top-k per group, period-over-period change, distributions and binning,
-  time-series resampling, share-of-total, conditional breakdowns.
+- **Translating pandas → Polars** — MUST read `references/pandas-to-polars.md` first
+  (it's short). It carries API-difference traps absent from this file: dict lookup →
+  `replace_strict`, SQL `IN`/`NOT IN` → semi/anti joins, `transform` → `over` vs
+  `group_by`, datetime `%f` → `%.f`, and matching pandas column order.
+- **Answering a natural-language data question** — read `references/insight-recipes.md`
+  for ready-made query shapes (top-k, period-over-period, distributions, time series,
+  share-of-total, conditional breakdowns).
 - `references/contexts.md` - detailed behavior of `select`,
   `with_columns`, `filter`, `group_by`/`agg`, `over` (window mapping
   strategies), `sort`, and `join`.
@@ -213,8 +220,3 @@ Load reference files only when the task needs detail beyond this file.
 - `references/lazy-api.md` - scan options for dirty data, query plan
   inspection with `explain()`, streaming engine for larger-than-memory
   data, `sink_parquet`.
-- `references/pandas-to-polars.md` - translating pandas code to Polars:
-  API pattern differences, datetime parsing, column renaming via
-  `Expr.name`, semi/anti joins, window vs. group_by, `pd.crosstab` →
-  `.pivot()`, and common correctness traps (division, cast, round,
-  `replace_strict`).

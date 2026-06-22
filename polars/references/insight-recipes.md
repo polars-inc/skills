@@ -10,6 +10,19 @@ by revenue, "last quarter" = 2026 Q1), then answer with numbers.
 Throughout, `lf` is a LazyFrame, e.g.
 `lf = pl.scan_csv("data.csv", try_parse_dates=True, null_values=["N/A", ""])`.
 
+## Contents
+
+- Top N by Y
+- Top N per group
+- Change vs. previous period
+- Share of total
+- Distribution
+- Trend over time (resampling)
+- Conditional breakdown
+- Above/below group average
+- Distinct counts / quick counts
+- Sanity checks before presenting an answer
+
 ---
 
 ## "What are the top N X by Y?"
