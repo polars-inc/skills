@@ -1,0 +1,13 @@
+{
+  "name": "polars",
+  "displayName": "Polars",
+  "version": "0.2.0",
+  "description": "Official Polars skill for Python: write fast, idiomatic Polars and answer natural language data questions with one-shot lazy queries.",
+  "author": {
+    "name": "Polars"
+  },
+  "homepage": "https://pola.rs",
+  "repository": "https://github.com/polars-inc/skills",
+  "license": "MIT",
+  "keywords": ["polars", "dataframes", "lazyframe", "data-processing", "data-analysis", "python"]
+}

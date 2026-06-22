@@ -1,268 +1,311 @@
-# Expression Contexts
+# String, Temporal, List, Struct Expressions
 
-Expressions are lazy descriptions of transformations. They compute nothing
-until placed in a **context**; the context determines what columns appear
-in the output, how broadcasting works, and the row count of the result.
-
-| Context | Purpose | Keeps other columns | Row count |
-|---|---|---|---|
-| `select()` | Project/transform columns | No | Same (or 1 for aggregates) |
-| `with_columns()` | Add/replace columns | Yes | Same |
-| `filter()` | Subset rows | Yes | Fewer |
-| `group_by().agg()` | Aggregate per group | No | One per group |
-| `over()` | Window within another context | Yes | Same |
-| `sort()` | Reorder rows | Yes | Same |
-| `join()` | Combine two frames | Both sides | Depends on `how` |
+Reference for the `str`, `dt`, `list`, and `struct` namespaces, `pl.selectors`,
+casting, and `when/then/otherwise`. Load this file when a task involves text
+processing, date/time arithmetic, nested data, or multi-type column selection.
 
 ---
 
-## select()
-
-Returns only the specified columns. Expressions must produce series of the
-same length or scalars; scalars broadcast.
+## String — `str.*`
 
 ```python
-lf.select(
-    pl.col("name"),
-    (pl.col("revenue") - pl.col("cost")).alias("profit"),
-    pl.col("age").mean().alias("avg_age"),   # scalar, broadcast
-    pl.lit(25).alias("target"),              # literal, broadcast
+pl.col("text").str.contains("pattern")          # regex by default
+pl.col("text").str.contains("prefix", literal=True)  # literal match
+pl.col("text").str.starts_with("pre")
+pl.col("text").str.ends_with("suf")
+pl.col("text").str.len_chars()                  # character count (not bytes)
+pl.col("text").str.len_bytes()                  # byte count
+
+pl.col("text").str.to_lowercase()
+pl.col("text").str.to_uppercase()
+pl.col("text").str.strip_chars()                # strip whitespace both sides
+pl.col("text").str.strip_chars_start()
+pl.col("text").str.strip_chars_end()
+pl.col("text").str.strip_chars(" ,-")           # strip specific characters
+
+pl.col("text").str.replace("old", "new")        # first match, literal
+pl.col("text").str.replace("pat", "new", n=1)   # n-th match
+pl.col("text").str.replace_all("old", "new")    # all matches
+pl.col("text").str.replace_all(r"\s+", " ")     # regex
+
+pl.col("text").str.slice(0, 5)                  # chars 0..5
+pl.col("text").str.head(3)                      # first 3 chars
+pl.col("text").str.tail(3)                      # last 3 chars
+
+pl.col("text").str.split(",")                   # List[Str]
+pl.col("text").str.split_exact(",", n=2)        # fixed-width struct
+pl.col("text").str.splitn(",", n=3)             # at most n parts
+
+pl.col("text").str.extract(r"(\d+)", group_index=1)   # first capture group
+pl.col("text").str.extract_all(r"\d+")                # List[Str] of all matches
+
+pl.col("text").str.zfill(5)                     # zero-pad to width 5
+pl.col("text").str.pad_start(8, "0")            # left-pad to width 8
+pl.col("text").str.pad_end(8, " ")              # right-pad to width 8
+
+pl.col("text").str.to_integer(base=10, strict=False)  # parse to Int64
+pl.col("text").str.to_decimal(scale=2)                # parse to Decimal (scale = decimal places)
+```
+
+### Parse strings to dates and datetimes
+
+```python
+# ISO strings like "2024-01-15"
+pl.col("d").str.to_date()
+
+# ISO datetimes like "2024-01-15T09:30:00"
+pl.col("d").str.to_datetime()
+
+# Custom format — pandas directives carry over, except %f (microseconds)
+# becomes %.f in Polars (%.f parses ".123456" correctly)
+pl.col("d").str.to_datetime("%Y-%m-%d %H:%M:%S")
+pl.col("d").str.to_datetime("%Y-%m-%d %.f")
+
+# When strings contain time but you want date precision: parse then truncate
+pl.col("d").str.to_datetime().dt.truncate("1d")
+
+# Non-strict parse: return null on failure instead of raising
+pl.col("d").str.to_date(strict=False)
+pl.col("d").str.to_datetime(strict=False)
+```
+
+---
+
+## Temporal — `dt.*`
+
+```python
+# Extract components
+pl.col("ts").dt.year()
+pl.col("ts").dt.month()         # 1-12
+pl.col("ts").dt.day()           # 1-31
+pl.col("ts").dt.hour()
+pl.col("ts").dt.minute()
+pl.col("ts").dt.second()
+pl.col("ts").dt.microsecond()   # 0-999999
+pl.col("ts").dt.weekday()       # 1=Monday, 7=Sunday
+pl.col("ts").dt.week()          # ISO week number
+pl.col("ts").dt.ordinal_day()   # day of year (1-366)
+pl.col("ts").dt.quarter()       # 1-4
+
+# Round and truncate
+pl.col("ts").dt.truncate("1mo")   # floor to month start
+pl.col("ts").dt.truncate("1d")    # floor to day start
+pl.col("ts").dt.truncate("1h")    # floor to hour
+pl.col("ts").dt.truncate("15m")   # floor to 15-minute bucket
+pl.col("ts").dt.round("1h")       # round to nearest hour
+
+# Shift by duration
+pl.col("ts").dt.offset_by("1mo")    # add 1 calendar month
+pl.col("ts").dt.offset_by("-7d")    # subtract 7 days
+pl.col("ts").dt.offset_by("2h30m")  # add 2h 30min
+
+# Format as string
+pl.col("ts").dt.strftime("%Y-%m")     # e.g. "2024-03"
+pl.col("ts").dt.strftime("%Y-%m-%d")  # e.g. "2024-03-15"
+
+# Time zone
+pl.col("ts").dt.replace_time_zone("UTC")               # attach tz (naive -> aware)
+pl.col("ts").dt.convert_time_zone("Europe/Amsterdam")  # convert between tz
+
+# Type conversions
+pl.col("ts").dt.date()      # Datetime -> Date
+pl.col("ts").dt.time()      # Datetime -> Time
+pl.col("ts").dt.epoch(time_unit="s")   # seconds since Unix epoch
+
+# Duration arithmetic
+pl.col("ts") + pl.duration(days=7)
+pl.col("end") - pl.col("start")           # Duration column
+(pl.col("end") - pl.col("start")).dt.total_seconds()  # integer seconds
+(pl.col("end") - pl.col("start")).dt.total_minutes()  # integer minutes
+(pl.col("end") - pl.col("start")).dt.total_hours()    # integer hours
+```
+
+### Window grouping on timestamps
+
+```python
+# Group events into 5-minute buckets
+lf.with_columns(
+    bucket=pl.col("ts").dt.truncate("5m")
+).group_by("bucket").agg(pl.len().alias("events"))
+
+# Window expression using truncated ts as the over() key
+lf.with_columns(
+    bucket_total=pl.col("amount").sum().over(pl.col("ts").dt.truncate("1d"))
 )
 ```
 
-Expression expansion applies one expression to many columns; expanded
-expressions run in parallel:
+---
+
+## List — `list.*`
+
+List columns hold a variable-length list per row. Use `explode()` to turn
+them into individual rows.
+
+```python
+pl.col("tags").list.len()                   # length of each list
+pl.col("tags").list.first()                 # first element
+pl.col("tags").list.last()                  # last element
+pl.col("tags").list.get(2)                  # element at index 2
+pl.col("tags").list.slice(1, 3)             # sublist [1, 2, 3]
+pl.col("tags").list.head(2)                 # first 2 elements
+pl.col("tags").list.tail(2)                 # last 2 elements
+
+pl.col("nums").list.sum()
+pl.col("nums").list.mean()
+pl.col("nums").list.min()
+pl.col("nums").list.max()
+
+pl.col("tags").list.contains("python")      # Boolean, one per row
+pl.col("tags").list.sort()
+pl.col("tags").list.unique()                # order not preserved
+pl.col("tags").list.sort(descending=True)
+pl.col("nums").list.reverse()
+
+pl.col("a").list.concat(pl.col("b"))        # concatenate two list columns
+pl.col("tags").list.join(", ")              # join into a single string
+
+# Explode: one row per list element
+lf.explode("tags")
+
+# Apply expression to each element without leaving the engine
+pl.col("scores").list.eval(pl.element() * 2)
+pl.col("scores").list.eval(pl.element().filter(pl.element() > 5))
+```
+
+---
+
+## Struct — `struct.*`
+
+Struct columns hold named fields per row, similar to a JSON object column.
+
+```python
+# Access a field
+pl.col("address").struct.field("city")
+pl.col("address").struct.field("zip_code")
+
+# Rename fields
+pl.col("address").struct.rename_fields(["town", "postcode"])
+
+# Unnest: promote all struct fields to top-level columns
+lf.unnest("address")
+
+# Build a struct from multiple columns
+pl.struct("city", "country").alias("location")
+pl.struct(pl.col("lat"), pl.col("lon")).alias("coords")
+
+# Modify a field inside the struct
+pl.col("address").struct.with_fields(
+    pl.field("city").str.to_uppercase()
+)
+
+# Parse JSON-embedded columns
+pl.col("payload").str.json_decode()    # String -> Struct or List
+```
+
+---
+
+## Selectors — `polars.selectors`
+
+Selectors let you refer to groups of columns by type or name pattern without
+listing column names explicitly.
 
 ```python
 import polars.selectors as cs
 
-lf.select(cs.numeric())                          # all numeric columns
-lf.select(pl.all().exclude("id", "created_at"))  # everything but
-lf.select(pl.col("^sales_.*$"))                  # regex (^...$ required)
-lf.select(pl.col("height", "weight").mean())     # expands to 2 exprs
-lf.select((cs.float() * 1.1).name.suffix("_adj"))
+# By dtype family
+cs.numeric()        # Int*, UInt*, Float*
+cs.integer()        # Int*, UInt*
+cs.float()          # Float32, Float64
+cs.string()         # Utf8 / String
+cs.boolean()
+cs.temporal()       # Date, Datetime, Duration, Time
+cs.categorical()
+cs.binary()         # raw bytes columns
+
+# By dtype instance
+cs.by_dtype(pl.Int64, pl.Float64)
+
+# By name pattern
+cs.starts_with("sales_")
+cs.ends_with("_id")
+cs.contains("revenue")
+cs.matches(r"^q\d$")    # regex; anchors are optional
+
+# Set operations
+cs.numeric() | cs.temporal()               # union
+cs.numeric() - cs.ends_with("_id")         # difference
+~cs.numeric()                              # complement (all non-numeric)
+cs.numeric() & cs.starts_with("net_")     # intersection
+
+# Use anywhere a column selector is accepted
+lf.select(cs.numeric())
+lf.select((cs.float() * 1.21).name.suffix("_with_tax"))
+lf.with_columns(cs.string().str.to_uppercase())
+lf.drop(cs.temporal())
+lf.select(pl.all().exclude(cs.categorical()))
 ```
-
-Selectors compose with set operations: `cs.numeric() | cs.temporal()`,
-`cs.numeric() - cs.ends_with("_id")`, `cs.contains("temp")`,
-`cs.starts_with("sales_")`, `cs.matches(r"^\d+$")`.
-
-Renaming: `.alias("x")` for one column; `.name.prefix("y_")`,
-`.name.suffix("_z")`, `.name.map(str.upper)` for expanded expressions.
-
-Computed columns keep their source name. Two outputs with the same name
-raise `DuplicateError`; always alias derived columns.
-
-## with_columns()
-
-Adds or replaces columns; everything else passes through. Every expression
-must produce a series matching the frame length, which is why plain
-aggregations fail here (use `over()`, below, or `select()`).
-
-```python
-lf.with_columns(
-    (pl.col("quantity") * pl.col("price")).alias("total"),
-    pl.col("price").cast(pl.Float64),                # replaces "price"
-    pl.col("date").dt.year().alias("year"),
-    is_active=(pl.col("status") == "active"),        # kwarg = alias
-)
-```
-
-Generate expressions programmatically, then pass them in one call:
-
-```python
-# avoid: loop of with_columns calls, each is a separate context
-# prefer: one call with a comprehension
-lf.with_columns(
-    (pl.col(c) * 2).alias(f"{c}_scaled") for c in ["a", "b", "c"]
-)
-```
-
-## filter()
-
-Keeps rows where the boolean expression is true. Combine conditions with
-`&`, `|`, `~`, each wrapped in parentheses. Python `and`/`or`/`not` raise.
-
-```python
-lf.filter(
-    (pl.col("age") >= 18)
-    & pl.col("status").is_in(["active", "pending"])
-    & pl.col("date").is_between(start, end)
-    & ~pl.col("is_deleted")
-)
-```
-
-Common predicates: `is_in`, `is_between` (inclusive), `is_null`,
-`is_not_null`, `str.contains`, `str.starts_with`, `str.ends_with`.
-
-Null behavior: a comparison against null yields null, which filter treats
-as false. `filter(pl.col("v") > 10)` silently drops null rows; add
-`| pl.col("v").is_null()` to keep them.
-
-## group_by() + agg()
-
-One output row per unique group. Output columns are the grouping keys plus
-the aggregations. Use `maintain_order=True` to keep first-seen group order
-(costs some parallelism).
-
-```python
-lf.group_by("region", "channel").agg(
-    pl.col("revenue").sum().alias("revenue"),
-    pl.col("revenue").mean().alias("avg_order"),
-    pl.col("customer_id").n_unique().alias("customers"),
-    pl.len().alias("rows"),
-)
-```
-
-Grouping keys can be expressions:
-
-```python
-lf.group_by(
-    (pl.col("date").dt.year() // 10 * 10).alias("decade"),
-    (pl.col("height") < 1.7).alias("is_short"),
-).agg(pl.len())
-```
-
-Aggregation building blocks:
-
-```python
-pl.col("v").sum() / .mean() / .median() / .std() / .min() / .max()
-pl.col("v").quantile(0.95)
-pl.len()                        # rows in group, nulls included
-pl.col("v").count()             # non-null values
-pl.col("v").null_count()
-pl.col("v").n_unique()
-pl.col("v").first() / .last()   # order = current row order within group
-pl.col("v").implode()           # collect group values into a list
-```
-
-Conditional aggregation, the workhorse for breakdown questions:
-
-```python
-lf.group_by("department").agg(
-    pl.col("salary").filter(pl.col("level") == "senior")
-        .mean().alias("avg_senior_salary"),
-    (pl.col("status") == "active").sum().alias("active_count"),
-)
-```
-
-Sorting within a group to get "the X with the highest Y":
-
-```python
-lf.group_by("category").agg(
-    pl.col("product").sort_by("revenue", descending=True)
-        .first().alias("top_product")
-)
-```
-
-To control `first()`/`last()` semantics, sort the frame before grouping:
-`lf.sort("date", descending=True).group_by("customer").agg(
-pl.col("order_id").first().alias("latest_order"))`.
-
-## over() - window functions
-
-Computes a grouped result inside `select()` or `with_columns()` while
-keeping the original row count. This is the way to put a group aggregate
-on every row.
-
-```python
-lf.with_columns(
-    dept_avg=pl.col("salary").mean().over("department"),
-    rank_in_cat=pl.col("score").rank("dense", descending=True)
-        .over("category"),
-    running=pl.col("amount").cum_sum().over("customer_id"),
-    prev_price=pl.col("price").shift(1).over("product_id"),
-    city_total=pl.col("sales").sum().over("country", "city"),
-)
-```
-
-`group_by` vs `over`: `lf.group_by("g").agg(pl.col("v").mean())` returns
-one row per group; `lf.select(pl.col("v").mean().over("g"))` returns the
-input row count with the group mean repeated.
-
-Mapping strategies control how non-scalar window results map back:
-
-- `"group_to_rows"` (default): each value returns to its original row.
-  Requires the result to have the same length as the group.
-- `"join"`: the whole group result becomes a list, repeated on every row
-  of the group.
-- `"explode"`: rows are emitted grouped together; faster, but row order
-  changes. Useful for top-n-per-group projections.
-
-```python
-lf.select(
-    pl.col("athlete").sort_by("rank")
-        .over("country", mapping_strategy="explode")
-)
-```
-
-## sort()
-
-```python
-lf.sort("date", descending=True)
-lf.sort("department", "salary", descending=[False, True])
-lf.sort(pl.col("revenue") / pl.col("cost"), descending=True)
-lf.sort("value", nulls_last=True)
-```
-
-## join()
-
-```python
-lf.join(other, on="id", how="inner")
-lf.join(other, on=["year", "month"], how="left")
-lf.join(other, left_on="id", right_on="user_id", how="left")
-lf.join(other, on="id", how="anti")    # rows in lf with no match
-lf.join(other, on="id", how="semi")    # rows in lf with a match, lf cols only
-```
-
-Join facts that bite:
-
-- Null keys never match by default; pass `nulls_equal=True` if two null
-  keys should be considered equal.
-- A left join introduces nulls for unmatched rows; check
-  `result.null_count()` after joining.
-- If the right key is not unique, the left side fans out: more rows after
-  an inner/left join means duplicate keys on the right.
-- Anti joins are the idiomatic "which X never did Y".
 
 ---
 
-## Putting contexts together
+## Casting
 
 ```python
-result = (
-    lf
-    .filter((pl.col("year") == 2024) & (pl.col("status") == "completed"))
-    .with_columns(
-        profit=pl.col("revenue") - pl.col("cost"),
-        month=pl.col("date").dt.month(),
-    )
-    .group_by("region", "month")
-    .agg(
-        pl.col("profit").sum().alias("total_profit"),
-        pl.col("customer_id").n_unique().alias("customers"),
-    )
-    .with_columns(
-        per_customer=pl.col("total_profit") / pl.col("customers")
-    )
-    .sort("total_profit", descending=True)
-    .select("region", "month", "total_profit", "per_customer")
-    .collect()
-)
+# Strict (default) — raises on values that cannot be cast
+pl.col("price").cast(pl.Float64)
+pl.col("qty").cast(pl.Int32)
+pl.col("flag").cast(pl.Boolean)
+pl.col("code").cast(pl.Categorical)
+
+# Non-strict — converts unparseable values to null instead of raising
+pl.col("price").cast(pl.Float64, strict=False)
+pl.col("qty").cast(pl.Int32, strict=False)
+
+# Common patterns
+pl.col("ts_ms").cast(pl.Datetime("ms"))    # epoch ms to Datetime
+pl.col("date_int").cast(pl.Date)           # epoch days to Date
+
+# Inspect the dtype before casting
+lf.collect_schema()["col_name"]
 ```
 
-Anti-patterns:
+---
+
+## when / then / otherwise
+
+Strings inside `then()` and `otherwise()` are **column names**, not values.
+Wrap literal values in `pl.lit()`.
 
 ```python
-# Python UDF: serial, no optimization
-lf.select(pl.col("v").map_elements(lambda x: x * 2))   # avoid
-lf.select(pl.col("v") * 2)                             # prefer
+# Basic conditional
+pl.when(pl.col("age") >= 18)
+  .then(pl.lit("adult"))
+  .otherwise(pl.lit("minor"))
+  .alias("age_group")
 
-# filtering after expensive work
-lf.group_by("id").agg(...).filter(pl.col("year") == 2024)   # avoid
-lf.filter(pl.col("year") == 2024).group_by("id").agg(...)   # prefer
+# Multiple conditions (CASE WHEN)
+pl.when(pl.col("score") >= 90).then(pl.lit("A"))
+  .when(pl.col("score") >= 80).then(pl.lit("B"))
+  .when(pl.col("score") >= 70).then(pl.lit("C"))
+  .otherwise(pl.lit("F"))
+  .alias("grade")
 
-# loop of contexts
-for c in cols: lf = lf.with_columns(pl.col(c) * 2)     # avoid
-lf.with_columns(pl.col(*cols) * 2)                     # prefer
+# Value from another column
+pl.when(pl.col("is_prime"))
+  .then(pl.col("revenue"))
+  .otherwise(pl.lit(0))
+  .alias("prime_revenue")
+
+# Null handling
+pl.col("v").fill_null(0)
+pl.col("v").fill_null(strategy="forward")
+pl.col("v").fill_null(strategy="backward")
+
+# SUM(CASE WHEN ...) inside agg()
+lf.group_by("dept").agg(
+    pl.when(pl.col("status") == "active")
+      .then(pl.col("salary"))
+      .otherwise(pl.lit(0))
+      .sum()
+      .alias("active_payroll")
+)
 ```
