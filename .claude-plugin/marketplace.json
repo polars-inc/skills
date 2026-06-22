@@ -16,7 +16,7 @@
       "homepage": "https://pola.rs",
       "repository": "https://github.com/polars-inc/skills",
       "license": "MIT",
-      "keywords": ["polars", "dataframes", "python", "data-analysis"]
+      "keywords": ["polars", "dataframes", "lazyframe", "data-processing", "data-analysis", "python"]
     }
   ]
 }
