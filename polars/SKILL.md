@@ -195,6 +195,9 @@ installed version rather than memory:
   - `polars_search_api("filter")` finds methods by keyword
   - `polars_browse("Expr.str")` explores a namespace
   - `polars_get_docstring("Expr.str.contains")` gets the exact signature
+- **Expressions fetch-map:** `references/expressions.md` — top section maps
+  all 18 expression categories to their live docs URLs; fetch the right page
+  when a method is uncertain or outside `str`/`dt`/`list`/`struct`.
 - **API reference:** https://docs.pola.rs
 - **GitHub:** https://github.com/pola-rs/polars
 
@@ -216,7 +219,9 @@ index; use it to read the whole file or jump to the relevant section.
   `with_columns`, `filter`, `group_by`/`agg`, `over` (window mapping
   strategies), `sort`, and `join`.
 - `references/expressions.md` - string, temporal, list, struct, and
-  selector syntax; casting; null handling; conditionals.
+  selector syntax; casting; null handling; conditionals. Also contains a
+  **full fetch-map** (18 categories → live docs URLs) for finding or verifying
+  any expression method outside those namespaces.
 - `references/lazy-api.md` - scan options for dirty data, query plan
   inspection with `explain()`, streaming engine for larger-than-memory
   data, `sink_parquet`.
