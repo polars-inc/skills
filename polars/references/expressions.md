@@ -4,6 +4,62 @@ Reference for the `str`, `dt`, `list`, and `struct` namespaces, `pl.selectors`,
 casting, and `when/then/otherwise`. Load this file when a task involves text
 processing, date/time arithmetic, nested data, or multi-type column selection.
 
+## Finding & verifying expressions in the API reference
+
+The expressions API changes between Polars versions (e.g. `str.lengths()` became
+`str.len_chars()` at 1.0). The hard-coded snippets below are a fast path, but
+for any method you are not certain about — or a namespace not covered below —
+**fetch the live docs rather than guessing**.
+
+**Prefer `polars-mcp`** when it is installed in the project environment
+(`polars_search_api("keyword")` / `polars_get_docstring("Expr.str.contains")`).
+**Fall back to `WebFetch`** when it isn't.
+
+### URL pattern
+
+```
+https://docs.pola.rs/api/python/stable/reference/expressions/<slug>.html
+```
+
+Use `stable` — it covers all of Polars 1.x. For installed-version checks, run
+`python -c "import polars as pl; print(pl.__version__)"` rather than switching
+to a versioned docs URL.
+
+### Category → URL map
+
+| Need | Slug | What you'll find |
+|---|---|---|
+| `sum`, `mean`, `min`, `max`, `min_by`, `max_by`, `std`, `var`, `count`, `first`, `last`, `quantile` | `aggregation` | Aggregation functions |
+| `arr.*` — fixed-width Array dtype | `array` | Array namespace |
+| `bin.*` — encode / decode / contains | `binary` | Binary namespace |
+| `is_between`, `is_in`, `is_duplicated`, `is_unique`, `any`, `all`, `not_` | `boolean` | Boolean helpers |
+| `cat.*` — categoricals | `categories` | Categorical namespace |
+| `alias`, `exclude`, column references | `columns` | Column / name selectors |
+| `abs`, `log`, `sqrt`, trig, `rank`, `rolling_*`, `cum_*`, `diff`, `pct_change`, `hist`, `rolling_mean_by`/`rolling_sum_by`/`rolling_*_by` (rolling on irregular timestamps), `ewm_mean_by`, `replace`, `replace_strict` | `computation` | Math / stats |
+| `ext.*` — custom extension types | `extension` | Extension types |
+| `pl.when`, `pl.lit`, `pl.col`, `pl.coalesce`, `pl.all_horizontal`, `pl.sum_horizontal`, `pl.concat_str`, `pl.int_range`, `pl.struct`, `pl.date_range`, `pl.datetime_range`, `pl.date_ranges`, `pl.datetime_ranges`, `pl.arg_sort_by`, `pl.business_day_count`, `pl.sql_expr` | `functions` | Top-level `pl.*` functions |
+| `list.*` | `list` | List namespace |
+| `filter`, `sort`, `head`/`tail`/`slice`, `gather`, `gather_every`, `shift`, `fill_null`, `cast`, `over`, `top_k`, `top_k_by`, `bottom_k_by` | `modify_select` | Manipulation / selection |
+| `meta.*` — expression introspection | `meta` | Meta namespace |
+| Misc helpers | `miscellaneous` | Miscellaneous |
+| `name.prefix`, `name.suffix`, `name.to_lowercase`, `name.map`, `name.keep` | `name` | Name namespace |
+| Arithmetic / comparison / logical operators | `operators` | Operators |
+| `str.*` | `string` | String namespace |
+| `struct.*` | `struct` | Struct namespace |
+| `dt.*` | `temporal` | Temporal namespace |
+
+### Recommended fetch prompt
+
+```
+WebFetch(
+  url="https://docs.pola.rs/api/python/stable/reference/expressions/<slug>.html",
+  prompt="List all methods in this namespace with their current signatures and
+          a one-line description."
+)
+```
+
+---
+
 ## Contents
 
 - String — `str.*` (includes parsing strings to dates/datetimes)
