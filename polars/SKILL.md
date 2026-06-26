@@ -16,7 +16,6 @@ license: MIT
 metadata:
   author: Polars
   homepage: https://pola.rs
-  version: "0.2.0"
   tags:
     - polars
     - dataframes
