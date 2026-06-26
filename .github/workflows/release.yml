@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'polars/.claude-plugin/plugin.json'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: version
+        run: echo "version=$(jq -r .version polars/.claude-plugin/plugin.json)" >> "$GITHUB_OUTPUT"
+      - name: Create release if tag is missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${{ steps.version.outputs.version }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists — skipping."
+          else
+            gh release create "$tag" --title "$tag" --generate-notes --target "$GITHUB_SHA"
+          fi
