@@ -55,6 +55,9 @@ Always check the schema before writing expressions against unfamiliar
 data; it is the difference between one-shot success and an iteration
 loop on `ColumnNotFoundError`.
 
+Always run `collect_schema` before executing a query. This gives you
+fast feedback on query correctness without running the query.
+
 ## Inspecting the plan
 
 ```python
