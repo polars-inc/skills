@@ -103,6 +103,13 @@ period-over-period, distributions, time series, cohort-style questions).
   columns. Check `lf.collect_schema()` before operating on columns. Cast
   explicitly with `.cast()`; use `.cast(pl.Float64, strict=False)` to turn
   unparseable values into nulls instead of errors.
+- **Respect warnings — never silence them.** A Polars warning names the
+  exact fix in its message. `PerformanceWarning` (and subclasses like
+  `PolarsInefficientMapWarning`) flags a footgun and tells you what to do:
+  e.g. "Use `LazyFrame.collect_schema()`" or rewrite a `map_elements` call
+  as a native expression. Read the message and apply the change. Never add
+  `warnings.filterwarnings("ignore")` or wrap code in
+  `warnings.catch_warnings()` to hide it.
 
 ## Canonical query pattern
 
