@@ -2,20 +2,15 @@
 
 The lazy API builds a query plan that Polars optimizes before execution:
 predicate pushdown (filters applied during the scan), projection pushdown
-(only needed columns read), slice pushdown, common subexpression
-elimination, and automatic parallelism. This is why queries start with
-`scan_*` and end with a single `collect()`.
+(only needed columns read), slice pushdown, common subexpression elimination,
+and automatic parallelism — which is why queries start with `scan_*` and end
+with a single `collect()`.
 
 ## Contents
 
-- Starting a lazy query
-- Starting from an in-memory DataFrame
-- Scan options that prevent downstream pain
-- Schema discovery without reading data
-- Inspecting the plan
-- Executing
-- Larger-than-memory: streaming and sinks
-- Composition pattern
+Starting a lazy query; starting from an in-memory DataFrame; scan options
+that prevent downstream pain; schema discovery without reading data;
+inspecting the plan; executing; larger-than-memory streaming and sinks.
 
 ## Starting a lazy query
 
@@ -28,15 +23,10 @@ lf = df.lazy()                            # from an eager DataFrame
 
 ## Starting from an in-memory DataFrame
 
-Always call `.lazy()` on a `DataFrame` before building a query on it — one
-passed into a function, returned by `pl.from_pandas()`, built with
-`pl.DataFrame(...)`, or produced by an earlier `collect()`. Eager methods
-execute immediately, one at a time: there is no plan, so no predicate or
-projection pushdown and no common subexpression elimination. `.lazy()` costs
-nothing (it wraps the existing data, it does not copy it).
-
-A function with a `DataFrame -> DataFrame` signature keeps that signature —
-go lazy on entry, collect on the way out:
+Always call `.lazy()` on a `DataFrame` before building a query on it: eager
+methods execute one at a time, with no plan to optimize. A function with a
+`DataFrame -> DataFrame` signature keeps that signature — go lazy on entry,
+collect on the way out:
 
 ```python
 def top_regions(df: pl.DataFrame, n: int) -> pl.DataFrame:
@@ -69,9 +59,9 @@ lf = pl.scan_csv(
 )
 ```
 
-If a numeric column still arrives as String, something non-numeric is in
-it; inspect with `lf.head(20).collect()` and either extend `null_values`
-or use `.cast(pl.Float64, strict=False)` deliberately.
+If a numeric column still arrives as String, something non-numeric is in it:
+inspect with `lf.head(20).collect()`, then extend `null_values` or use
+`.cast(pl.Float64, strict=False)` deliberately.
 
 ## Schema discovery without reading data
 
@@ -81,12 +71,9 @@ lf.collect_schema().names()
 lf.head(5).collect()         # tiny peek at actual values
 ```
 
-Always check the schema before writing expressions against unfamiliar
-data; it is the difference between one-shot success and an iteration
-loop on `ColumnNotFoundError`.
-
-Always run `collect_schema` before executing a query. This gives you
-fast feedback on query correctness without running the query.
+Always run `collect_schema()` before executing a query: it validates the plan
+and gives the real column names and dtypes without reading data, which is the
+difference between one-shot success and a loop of `ColumnNotFoundError`.
 
 ## Inspecting the plan
 
@@ -97,10 +84,10 @@ print(lf.explain())                    # optimized plan as text
 print(lf.explain(optimized=False))     # naive plan, for comparison
 ```
 
-In the optimized plan, look for the filter inside the scan node
-(predicate pushdown) and `PROJECT 2/47 COLUMNS` (projection pushdown).
-If a predicate did not push down, it usually depends on a computed
-column; filter on source columns where possible.
+In the optimized plan, look for the filter inside the scan node (predicate
+pushdown) and `PROJECT 2/47 COLUMNS` (projection pushdown). A predicate that
+did not push down usually depends on a computed column — filter on source
+columns where possible.
 
 ## Executing
 
@@ -108,14 +95,13 @@ column; filter on source columns where possible.
 result = lf.collect()                  # optimize + run, returns DataFrame
 ```
 
-Collect exactly once per query. An intermediate `collect()` materializes
-everything and discards the plan, so later steps optimize from scratch.
-For debugging a long chain, prefer `lf.head(20).collect()` over
-collecting the full intermediate.
+Collect exactly once per query. For debugging a long chain, prefer
+`lf.head(20).collect()` over collecting the full intermediate.
 
-When the same scan feeds several final queries, build them as separate
-LazyFrames from one shared base and collect them together so common
-subplans are computed once:
+LazyFrames are cheap immutable values, so when several queries share a scan,
+build them from one base and collect them together — common subplans are then
+computed once. This is also the right shape for conversational analysis: keep
+the base, extend it per follow-up question, collect once per answer.
 
 ```python
 base = pl.scan_parquet("orders/*.parquet").filter(pl.col("year") == 2024)
@@ -130,9 +116,9 @@ region_df, month_df = pl.collect_all([by_region, by_month])
 result = lf.collect(engine="streaming")    # process in batches
 ```
 
-The streaming engine executes the plan in chunks so datasets larger than
-RAM still complete. For large outputs, skip materialization entirely and
-sink straight to disk:
+The streaming engine executes the plan in chunks, so datasets larger than
+RAM still complete. For large outputs, skip materialization and sink straight
+to disk:
 
 ```python
 lf.sink_parquet("out.parquet")
@@ -140,30 +126,5 @@ lf.sink_csv("out.csv")
 lf.sink_ndjson("out.ndjson")
 ```
 
-Use streaming or sinks when the input is much larger than memory or when
-a regular `collect()` is killed by the OS. Aggregated results small
-enough to inspect can still be collected normally afterward by scanning
-the sink output.
-
-## Composition pattern
-
-LazyFrames are cheap immutable values; build complex queries from a
-shared base:
-
-```python
-data = pl.scan_csv("data.csv")
-active = data.filter(pl.col("status") == "active")
-
-summary = (
-    active.group_by("category")
-    .agg(
-        pl.col("amount").sum().alias("total"),
-        pl.col("amount").mean().alias("average"),
-    )
-    .collect()
-)
-```
-
-This is also the right shape for conversational analysis: keep the base
-LazyFrame, answer each follow-up question by extending it, collect once
-per answer.
+Use streaming or sinks when the input is much larger than memory, or when a
+regular `collect()` is killed by the OS.

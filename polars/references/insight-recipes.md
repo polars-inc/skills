@@ -1,27 +1,19 @@
 # From Question to Query: Insight Recipes
 
 Query shapes for answering natural language questions about data. Each
-recipe is a complete lazy chain: adapt column names, collect once.
-
-Workflow reminder: discover the schema first (`lf.collect_schema()`,
-`lf.head(5).collect()`), state how you interpreted vague terms ("top" =
-by revenue, "last quarter" = 2026 Q1), then answer with numbers.
+recipe is a complete lazy chain: adapt column names, collect once. Follow the
+workflow in `SKILL.md` — schema first, state how you read vague terms, answer
+with numbers.
 
 Throughout, `lf` is a LazyFrame, e.g.
 `lf = pl.scan_csv("data.csv", try_parse_dates=True, null_values=["N/A", ""])`.
 
 ## Contents
 
-- Top N by Y
-- Top N per group
-- Change vs. previous period
-- Share of total
-- Distribution
-- Trend over time (resampling)
-- Conditional breakdown
-- Above/below group average
-- Distinct counts / quick counts
-- Sanity checks before presenting an answer
+Top N by Y; top N per group; change vs. previous period; share of total;
+distribution; trend over time (resampling); conditional breakdown;
+above/below group average; distinct counts; sanity checks before presenting
+an answer.
 
 ---
 
@@ -37,8 +29,7 @@ Throughout, `lf` is a LazyFrame, e.g.
 )
 ```
 
-`top_k` avoids sorting the whole frame; the final small sort is for
-presentation only.
+`top_k` avoids sorting the whole frame; the final sort is presentational.
 
 ## "Top N per group" (top 3 products per region)
 
@@ -71,9 +62,8 @@ presentation only.
 )
 ```
 
-Per-group variant: use `.shift(1).over("region")` and sort by
-`("region", "month")` first. State the definition used (month-over-month,
-percent) in the answer.
+Per-group variant: `.shift(1).over("region")`, sorted by
+`("region", "month")` first. State the definition used in the answer.
 
 ## "What share does each X have of the total?"
 
@@ -156,8 +146,8 @@ for one series per category.
 )
 ```
 
-`expr.filter()` inside `agg` aggregates a subset per group. Summing a
-boolean expression counts how often it is true.
+`expr.filter()` inside `agg` aggregates a subset per group; summing a boolean
+counts how often it is true.
 
 ## "Which X are above/below their group average?" (window)
 
@@ -186,8 +176,8 @@ boolean expression counts how often it is true.
 )
 ```
 
-`pl.len()` counts rows including nulls; `.count()` counts non-null values
-of a column. Pick deliberately and say which you used if it matters.
+`pl.len()` counts rows including nulls; `.count()` counts non-null values of
+a column — pick deliberately.
 
 ---
 

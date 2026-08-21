@@ -1,74 +1,50 @@
 # String, Temporal, List, Struct Expressions
 
-Reference for the `str`, `dt`, `list`, and `struct` namespaces, `pl.selectors`,
-casting, and `when/then/otherwise`. Load this file when a task involves text
-processing, date/time arithmetic, nested data, or multi-type column selection.
-
-## Finding & verifying expressions in the API reference
-
-The expressions API changes between Polars versions (e.g. `str.lengths()` became
-`str.len_chars()` at 1.0). The hard-coded snippets below are a fast path, but
-for any method you are not certain about — or a namespace not covered below —
-**fetch the live docs rather than guessing**.
-
-**Prefer `polars-mcp`** when it is installed in the project environment
-(`polars_search_api("keyword")` / `polars_get_docstring("Expr.str.contains")`).
-**Fall back to `WebFetch`** when it isn't.
-
-### URL pattern
-
-```
-https://docs.pola.rs/api/python/stable/reference/expressions/<slug>.html
-```
-
-Use `stable` — it covers all of Polars 1.x. For installed-version checks, run
-`python -c "import polars as pl; print(pl.__version__)"` rather than switching
-to a versioned docs URL.
-
-### Category → URL map
-
-| Need | Slug | What you'll find |
-|---|---|---|
-| `sum`, `mean`, `min`, `max`, `min_by`, `max_by`, `std`, `var`, `count`, `first`, `last`, `quantile` | `aggregation` | Aggregation functions |
-| `arr.*` — fixed-width Array dtype | `array` | Array namespace |
-| `bin.*` — encode / decode / contains | `binary` | Binary namespace |
-| `is_between`, `is_in`, `is_duplicated`, `is_unique`, `any`, `all`, `not_` | `boolean` | Boolean helpers |
-| `cat.*` — categoricals | `categories` | Categorical namespace |
-| `alias`, `exclude`, column references | `columns` | Column / name selectors |
-| `abs`, `log`, `sqrt`, trig, `rank`, `rolling_*`, `cum_*`, `diff`, `pct_change`, `hist`, `rolling_mean_by`/`rolling_sum_by`/`rolling_*_by` (rolling on irregular timestamps), `ewm_mean_by`, `replace`, `replace_strict` | `computation` | Math / stats |
-| `ext.*` — custom extension types | `extension` | Extension types |
-| `pl.when`, `pl.lit`, `pl.col`, `pl.coalesce`, `pl.all_horizontal`, `pl.sum_horizontal`, `pl.concat_str`, `pl.int_range`, `pl.struct`, `pl.date_range`, `pl.datetime_range`, `pl.date_ranges`, `pl.datetime_ranges`, `pl.arg_sort_by`, `pl.business_day_count`, `pl.sql_expr` | `functions` | Top-level `pl.*` functions |
-| `list.*` | `list` | List namespace |
-| `filter`, `sort`, `head`/`tail`/`slice`, `gather`, `gather_every`, `shift`, `fill_null`, `cast`, `over`, `top_k`, `top_k_by`, `bottom_k_by` | `modify_select` | Manipulation / selection |
-| `meta.*` — expression introspection | `meta` | Meta namespace |
-| Misc helpers | `miscellaneous` | Miscellaneous |
-| `name.prefix`, `name.suffix`, `name.to_lowercase`, `name.map`, `name.keep` | `name` | Name namespace |
-| Arithmetic / comparison / logical operators | `operators` | Operators |
-| `str.*` | `string` | String namespace |
-| `struct.*` | `struct` | Struct namespace |
-| `dt.*` | `temporal` | Temporal namespace |
-
-### Recommended fetch prompt
-
-```
-WebFetch(
-  url="https://docs.pola.rs/api/python/stable/reference/expressions/<slug>.html",
-  prompt="List all methods in this namespace with their current signatures and
-          a one-line description."
-)
-```
-
----
+Load this file when a task involves text processing, date/time arithmetic,
+nested data, or multi-type column selection.
 
 ## Contents
 
-- String — `str.*` (includes parsing strings to dates/datetimes)
-- Temporal — `dt.*` (includes window grouping on timestamps)
-- List — `list.*`
-- Struct — `struct.*`
-- Expression expansion & selectors — `polars.selectors`
-- Casting
-- `when / then / otherwise`
+Finding & verifying expressions in the API reference; `str.*` (includes
+parsing strings to dates/datetimes); `dt.*` (includes window grouping on
+timestamps); `list.*`; `struct.*`; expression expansion & selectors;
+casting; `when / then / otherwise`.
+
+## Finding & verifying expressions in the API reference
+
+The snippets below are a fast path. For any method you are not certain about
+— or a namespace not covered here — **fetch the live docs rather than
+guessing**; the API changed at 1.0.
+
+**Prefer `polars-mcp`** when it is installed in the project environment
+(`polars_search_api("keyword")` / `polars_get_docstring("Expr.str.contains")`).
+**Fall back to `WebFetch`** when it isn't: fetch
+`https://docs.pola.rs/api/python/stable/reference/expressions/<slug>.html`
+(use `stable`, it covers all of Polars 1.x) and ask for every method in the
+namespace with its current signature and a one-line description.
+
+### Category → URL map
+
+| Need | Slug |
+|---|---|
+| `sum`, `mean`, `min`, `max`, `min_by`, `max_by`, `std`, `var`, `count`, `first`, `last`, `quantile` | `aggregation` |
+| `arr.*` — fixed-width Array dtype | `array` |
+| `bin.*` — encode / decode / contains | `binary` |
+| `is_between`, `is_in`, `is_duplicated`, `is_unique`, `any`, `all`, `not_` | `boolean` |
+| `cat.*` — categoricals | `categories` |
+| `alias`, `exclude`, column references | `columns` |
+| `abs`, `log`, `sqrt`, trig, `rank`, `rolling_*`, `cum_*`, `diff`, `pct_change`, `hist`, `rolling_mean_by`/`rolling_sum_by`/`rolling_*_by` (rolling on irregular timestamps), `ewm_mean_by`, `replace`, `replace_strict` | `computation` |
+| `ext.*` — custom extension types | `extension` |
+| `pl.when`, `pl.lit`, `pl.col`, `pl.coalesce`, `pl.all_horizontal`, `pl.sum_horizontal`, `pl.concat_str`, `pl.int_range`, `pl.struct`, `pl.date_range`, `pl.datetime_range`, `pl.date_ranges`, `pl.datetime_ranges`, `pl.arg_sort_by`, `pl.business_day_count`, `pl.sql_expr` | `functions` |
+| `list.*` | `list` |
+| `filter`, `sort`, `head`/`tail`/`slice`, `gather`, `gather_every`, `shift`, `fill_null`, `cast`, `over`, `top_k`, `top_k_by`, `bottom_k_by` | `modify_select` |
+| `meta.*` — expression introspection | `meta` |
+| Misc helpers | `miscellaneous` |
+| `name.prefix`, `name.suffix`, `name.to_lowercase`, `name.map`, `name.keep` | `name` |
+| Arithmetic / comparison / logical operators | `operators` |
+| `str.*` | `string` |
+| `struct.*` | `struct` |
+| `dt.*` | `temporal` |
 
 ---
 
@@ -84,9 +60,8 @@ pl.col("text").str.len_bytes()                  # byte count
 
 pl.col("text").str.to_lowercase()
 pl.col("text").str.to_uppercase()
-pl.col("text").str.strip_chars()                # strip whitespace both sides
-pl.col("text").str.strip_chars_start()
-pl.col("text").str.strip_chars_end()
+pl.col("text").str.strip_chars()                # whitespace, both sides
+pl.col("text").str.strip_chars_start()          # also: strip_chars_end()
 pl.col("text").str.strip_chars(" ,-")           # strip specific characters
 
 pl.col("text").str.replace("old", "new")        # first match, literal
@@ -95,8 +70,7 @@ pl.col("text").str.replace_all("old", "new")    # all matches
 pl.col("text").str.replace_all(r"\s+", " ")     # regex
 
 pl.col("text").str.slice(0, 5)                  # chars 0..5
-pl.col("text").str.head(3)                      # first 3 chars
-pl.col("text").str.tail(3)                      # last 3 chars
+pl.col("text").str.head(3)                      # first 3 chars (also: tail)
 
 pl.col("text").str.split(",")                   # List[Str]
 pl.col("text").str.split_exact(",", n=2)        # fixed-width struct
@@ -106,8 +80,7 @@ pl.col("text").str.extract(r"(\d+)", group_index=1)   # first capture group
 pl.col("text").str.extract_all(r"\d+")                # List[Str] of all matches
 
 pl.col("text").str.zfill(5)                     # zero-pad to width 5
-pl.col("text").str.pad_start(8, "0")            # left-pad to width 8
-pl.col("text").str.pad_end(8, " ")              # right-pad to width 8
+pl.col("text").str.pad_start(8, "0")            # left-pad (also: pad_end)
 
 pl.col("text").str.to_integer(base=10, strict=False)  # parse to Int64
 pl.col("text").str.to_decimal(scale=2)                # parse to Decimal (scale = decimal places)
@@ -122,17 +95,15 @@ pl.col("d").str.to_date()
 # ISO datetimes like "2024-01-15T09:30:00"
 pl.col("d").str.to_datetime()
 
-# Custom format — pandas directives carry over, except %f (microseconds)
-# becomes %.f in Polars (%.f parses ".123456" correctly)
-pl.col("d").str.to_datetime("%Y-%m-%d %H:%M:%S")
+# Custom format — pandas directives carry over, except %f (microseconds),
+# which becomes %.f in Polars (%.f parses ".123456" correctly)
 pl.col("d").str.to_datetime("%Y-%m-%d %.f")
 
-# When strings contain time but you want date precision: parse then truncate
+# Strings contain time but you want date precision: parse then truncate
 pl.col("d").str.to_datetime().dt.truncate("1d")
 
-# Non-strict parse: return null on failure instead of raising
+# Non-strict parse: null on failure instead of raising
 pl.col("d").str.to_date(strict=False)
-pl.col("d").str.to_datetime(strict=False)
 ```
 
 ---
@@ -144,20 +115,15 @@ pl.col("d").str.to_datetime(strict=False)
 pl.col("ts").dt.year()
 pl.col("ts").dt.month()         # 1-12
 pl.col("ts").dt.day()           # 1-31
-pl.col("ts").dt.hour()
-pl.col("ts").dt.minute()
-pl.col("ts").dt.second()
-pl.col("ts").dt.microsecond()   # 0-999999
+pl.col("ts").dt.hour()          # also: minute(), second(), microsecond()
 pl.col("ts").dt.weekday()       # 1=Monday, 7=Sunday
 pl.col("ts").dt.week()          # ISO week number
 pl.col("ts").dt.ordinal_day()   # day of year (1-366)
 pl.col("ts").dt.quarter()       # 1-4
 
 # Round and truncate
-pl.col("ts").dt.truncate("1mo")   # floor to month start
-pl.col("ts").dt.truncate("1d")    # floor to day start
-pl.col("ts").dt.truncate("1h")    # floor to hour
-pl.col("ts").dt.truncate("15m")   # floor to 15-minute bucket
+pl.col("ts").dt.truncate("1mo")   # floor to month start; any duration
+                                  # string works: "1d", "1h", "15m"
 pl.col("ts").dt.round("1h")       # round to nearest hour
 
 # Shift by duration
@@ -167,7 +133,6 @@ pl.col("ts").dt.offset_by("2h30m")  # add 2h 30min
 
 # Format as string
 pl.col("ts").dt.strftime("%Y-%m")     # e.g. "2024-03"
-pl.col("ts").dt.strftime("%Y-%m-%d")  # e.g. "2024-03-15"
 
 # Time zone
 pl.col("ts").dt.replace_time_zone("UTC")               # attach tz (naive -> aware)
@@ -181,9 +146,8 @@ pl.col("ts").dt.epoch(time_unit="s")   # seconds since Unix epoch
 # Duration arithmetic
 pl.col("ts") + pl.duration(days=7)
 pl.col("end") - pl.col("start")           # Duration column
-(pl.col("end") - pl.col("start")).dt.total_seconds()  # integer seconds
-(pl.col("end") - pl.col("start")).dt.total_minutes()  # integer minutes
-(pl.col("end") - pl.col("start")).dt.total_hours()    # integer hours
+(pl.col("end") - pl.col("start")).dt.total_seconds()  # integer; also
+                                    # total_minutes, total_hours, total_days
 ```
 
 ### Window grouping on timestamps
@@ -204,28 +168,19 @@ lf.with_columns(
 
 ## List — `list.*`
 
-List columns hold a variable-length list per row. Use `explode()` to turn
-them into individual rows.
+List columns hold a variable-length list per row.
 
 ```python
 pl.col("tags").list.len()                   # length of each list
-pl.col("tags").list.first()                 # first element
-pl.col("tags").list.last()                  # last element
-pl.col("tags").list.get(2)                  # element at index 2
+pl.col("tags").list.first()                 # also: last(), get(2)
 pl.col("tags").list.slice(1, 3)             # sublist [1, 2, 3]
-pl.col("tags").list.head(2)                 # first 2 elements
-pl.col("tags").list.tail(2)                 # last 2 elements
+pl.col("tags").list.head(2)                 # first 2 (also: tail)
 
-pl.col("nums").list.sum()
-pl.col("nums").list.mean()
-pl.col("nums").list.min()
-pl.col("nums").list.max()
+pl.col("nums").list.sum()                   # also: mean, min, max
 
 pl.col("tags").list.contains("python")      # Boolean, one per row
-pl.col("tags").list.sort()
+pl.col("tags").list.sort(descending=True)   # also: sort(), reverse()
 pl.col("tags").list.unique()                # order not preserved
-pl.col("tags").list.sort(descending=True)
-pl.col("nums").list.reverse()
 
 pl.col("a").list.concat(pl.col("b"))        # concatenate two list columns
 pl.col("tags").list.join(", ")              # join into a single string
@@ -279,7 +234,7 @@ context, and the code does not need to know the column list up front.
 
 ```python
 pl.col("height", "weight")      # explicit names
-pl.col(pl.Float64)              # by dtype (cannot be mixed with names)
+pl.col(pl.Float64)              # by dtype
 pl.col("^sales_.*$")            # regex — the ^...$ anchors are required
 pl.all()                        # every column (same as pl.col("*"))
 pl.all().exclude("id")          # everything but
@@ -345,14 +300,10 @@ Caveats:
 
 ```python
 # Strict (default) — raises on values that cannot be cast
-pl.col("price").cast(pl.Float64)
-pl.col("qty").cast(pl.Int32)
-pl.col("flag").cast(pl.Boolean)
-pl.col("code").cast(pl.Categorical)
+pl.col("price").cast(pl.Float64)   # also pl.Int32, pl.Boolean, pl.Categorical
 
 # Non-strict — converts unparseable values to null instead of raising
 pl.col("price").cast(pl.Float64, strict=False)
-pl.col("qty").cast(pl.Int32, strict=False)
 
 # Common patterns
 pl.col("ts_ms").cast(pl.Datetime("ms"))    # epoch ms to Datetime
@@ -366,8 +317,8 @@ lf.collect_schema()["col_name"]
 
 ## when / then / otherwise
 
-Strings inside `then()` and `otherwise()` are **column names**, not values.
-Wrap literal values in `pl.lit()`.
+Strings inside `then()`/`otherwise()` are **column names**; wrap literal
+values in `pl.lit()`.
 
 ```python
 # Basic conditional
@@ -383,18 +334,11 @@ pl.when(pl.col("score") >= 90).then(pl.lit("A"))
   .otherwise(pl.lit("F"))
   .alias("grade")
 
-# Value from another column
-pl.when(pl.col("is_prime"))
-  .then(pl.col("revenue"))
-  .otherwise(pl.lit(0))
-  .alias("prime_revenue")
-
 # Null handling
 pl.col("v").fill_null(0)
-pl.col("v").fill_null(strategy="forward")
-pl.col("v").fill_null(strategy="backward")
+pl.col("v").fill_null(strategy="forward")     # also: "backward"
 
-# SUM(CASE WHEN ...) inside agg()
+# SUM(CASE WHEN ...) inside agg() — then() can take another column
 lf.group_by("dept").agg(
     pl.when(pl.col("status") == "active")
       .then(pl.col("salary"))

@@ -6,15 +6,8 @@ in the output, how broadcasting works, and the row count of the result.
 
 ## Contents
 
-- `select()` — project or transform columns, keep only specified
-  (includes expression expansion: selectors, regex, `pl.all().exclude`)
-- `with_columns()` — add or replace columns, keep all others
-- `filter()` — remove rows
-- `group_by() + agg()` — aggregate per group
-- `over()` — window functions (broadcast group result to all rows)
-- `sort()` — reorder rows
-- `join()` — combine two frames
-- Putting contexts together
+`select()`, `with_columns()`, `filter()`, `group_by() + agg()`, `over()`,
+`sort()`, `join()`, putting contexts together.
 
 | Context | Purpose | Keeps other columns | Row count |
 |---|---|---|---|
@@ -42,36 +35,17 @@ lf.select(
 )
 ```
 
-Expression expansion applies one expression to many columns; expanded
-expressions run in parallel:
-
-```python
-import polars.selectors as cs
-
-lf.select(cs.numeric())                          # all numeric columns
-lf.select(pl.all().exclude("id", "created_at"))  # everything but
-lf.select(pl.col("^sales_.*$"))                  # regex (^...$ required)
-lf.select(pl.col("height", "weight").mean())     # expands to 2 exprs
-lf.select((cs.float() * 1.1).name.suffix("_adj"))
-```
-
-Selectors compose with set operations: `cs.numeric() | cs.temporal()`,
-`cs.numeric() - cs.ends_with("_id")`, `cs.contains("temp")`,
-`cs.starts_with("sales_")`, `cs.matches(r"^\d+$")`.
-
-Renaming: `.alias("x")` for one column; `.name.prefix("y_")`,
-`.name.suffix("_z")`, `.name.map(str.upper)` for expanded expressions.
-
-Computed columns keep their source name. Two outputs with the same name
-raise `DuplicateError`; always alias derived columns.
+Expression expansion works here too — one expression covering many columns,
+expanded against the schema and run in parallel: `lf.select(cs.numeric())`,
+`lf.select((cs.float() * 1.1).name.suffix("_adj"))`. Selection forms, set
+operations and renaming: see the expansion section of `expressions.md`.
 
 ## with_columns()
 
 Adds or replaces columns; everything else passes through. A plain
 aggregation like `pl.col("v").mean()` produces a scalar that Polars
-broadcasts to every row — it does not error. Use `over("group")` when
-you want the *per-group* aggregate aligned to each row instead of the
-global value.
+broadcasts to every row — it does not error. Use `over("group")` for the
+*per-group* aggregate aligned to each row instead.
 
 ```python
 lf.with_columns(
@@ -87,26 +61,20 @@ the same for every column, expand instead of generating one expression per
 column:
 
 ```python
-# avoid: loop of with_columns calls, each is a separate context
-for c in ["a", "b", "c"]:
-    lf = lf.with_columns((pl.col(c) * 2).alias(f"{c}_scaled"))
-
-# avoid: a comprehension when the operation is identical per column
+# avoid: one expression per column (a loop of contexts is worse still)
 lf.with_columns((pl.col(c) * 2).alias(f"{c}_scaled") for c in ["a", "b", "c"])
 
 # prefer: one expanded expression
 lf.with_columns((pl.col("a", "b", "c") * 2).name.suffix("_scaled"))
 
 # a comprehension is fine when the logic genuinely differs per column
-lf.with_columns(
-    (pl.col(c) * m).alias(f"{c}_scaled") for c, m in factors.items()
-)
+lf.with_columns((pl.col(c) * m).alias(f"{c}_s") for c, m in factors.items())
 ```
 
 ## filter()
 
-Keeps rows where the boolean expression is true. Combine conditions with
-`&`, `|`, `~`, each wrapped in parentheses. Python `and`/`or`/`not` raise.
+Keeps rows where the boolean expression is true; combine conditions with
+`&`, `|`, `~`, each in parentheses.
 
 ```python
 lf.filter(
@@ -120,15 +88,14 @@ lf.filter(
 Common predicates: `is_in`, `is_between` (inclusive), `is_null`,
 `is_not_null`, `str.contains`, `str.starts_with`, `str.ends_with`.
 
-Null behavior: a comparison against null yields null, which filter treats
-as false. `filter(pl.col("v") > 10)` silently drops null rows; add
-`| pl.col("v").is_null()` to keep them.
+Null behavior: `filter(pl.col("v") > 10)` silently drops null rows, because
+a comparison against null is null; add `| pl.col("v").is_null()` to keep them.
 
 ## group_by() + agg()
 
-One output row per unique group. Output columns are the grouping keys plus
-the aggregations. Use `maintain_order=True` to keep first-seen group order
-(costs some parallelism).
+One output row per unique group; output columns are the grouping keys plus
+the aggregations. `maintain_order=True` keeps first-seen group order (costs
+some parallelism).
 
 ```python
 lf.group_by("region", "channel").agg(
@@ -161,14 +128,13 @@ pl.col("v").first() / .last()       # order = current row order within group
 pl.col("v").implode()           # collect group values into a list
 ```
 
-Conditional aggregation, the workhorse for breakdown questions:
+Conditional aggregation, the workhorse for breakdown questions —
+`expr.filter()` aggregates a subset per group, and summing a boolean counts
+how often it is true:
 
 ```python
-lf.group_by("department").agg(
-    pl.col("salary").filter(pl.col("level") == "senior")
-        .mean().alias("avg_senior_salary"),
-    (pl.col("status") == "active").sum().alias("active_count"),
-)
+pl.col("salary").filter(pl.col("level") == "senior").mean()
+(pl.col("status") == "active").sum()
 ```
 
 Sorting within a group to get "the X with the highest Y":
@@ -181,14 +147,13 @@ lf.group_by("category").agg(
 ```
 
 To control `first()`/`last()` semantics, sort the frame before grouping:
-`lf.sort("date", descending=True).group_by("customer").agg(
-pl.col("order_id").first().alias("latest_order"))`.
+`lf.sort("date", descending=True).group_by("customer").agg(...)`.
 
 ## over() - window functions
 
 Computes a grouped result inside `select()` or `with_columns()` while
-keeping the original row count. This is the way to put a group aggregate
-on every row.
+keeping the original row count — the way to put a group aggregate on every
+row.
 
 ```python
 lf.with_columns(
@@ -201,9 +166,9 @@ lf.with_columns(
 )
 ```
 
-`group_by` vs `over`: `lf.group_by("g").agg(pl.col("v").mean())` returns
-one row per group; `lf.select(pl.col("v").mean().over("g"))` returns the
-input row count with the group mean repeated.
+`lf.group_by("g").agg(pl.col("v").mean())` returns one row per group;
+`lf.select(pl.col("v").mean().over("g"))` returns the input row count with
+the group mean repeated.
 
 Mapping strategies control how non-scalar window results map back:
 
@@ -242,8 +207,6 @@ lf.join(other, on="id", how="semi")    # rows in lf with a match, lf cols only
 
 Join facts that bite:
 
-- Null keys never match by default; pass `nulls_equal=True` if two null
-  keys should be considered equal.
 - A left join introduces nulls for unmatched rows; check
   `result.null_count()` after joining.
 - If the right key is not unique, the left side fans out: more rows after
@@ -254,14 +217,13 @@ Join facts that bite:
 
 ## Putting contexts together
 
+Same order as the canonical pattern in `SKILL.md`; note the second
+`with_columns()`, which computes from the aggregates:
+
 ```python
 result = (
     lf
     .filter((pl.col("year") == 2024) & (pl.col("status") == "completed"))
-    .with_columns(
-        profit=pl.col("revenue") - pl.col("cost"),
-        month=pl.col("date").dt.month(),
-    )
     .group_by("region", "month")
     .agg(
         pl.col("profit").sum().alias("total_profit"),
@@ -271,7 +233,6 @@ result = (
         per_customer=pl.col("total_profit") / pl.col("customers")
     )
     .sort("total_profit", descending=True)
-    .select("region", "month", "total_profit", "per_customer")
     .collect()
 )
 ```
@@ -279,10 +240,6 @@ result = (
 Anti-patterns:
 
 ```python
-# Python UDF: serial, no optimization
-lf.select(pl.col("v").map_elements(lambda x: x * 2))   # avoid
-lf.select(pl.col("v") * 2)                             # prefer
-
 # filtering after expensive work
 lf.group_by("id").agg(...).filter(pl.col("year") == 2024)   # avoid
 lf.filter(pl.col("year") == 2024).group_by("id").agg(...)   # prefer
