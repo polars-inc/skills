@@ -66,7 +66,7 @@ WebFetch(
 - Temporal — `dt.*` (includes window grouping on timestamps)
 - List — `list.*`
 - Struct — `struct.*`
-- Selectors — `polars.selectors`
+- Expression expansion & selectors — `polars.selectors`
 - Casting
 - `when / then / otherwise`
 
@@ -270,10 +270,23 @@ pl.col("payload").str.json_decode()    # String -> Struct or List
 
 ---
 
-## Selectors — `polars.selectors`
+## Expression expansion & selectors — `polars.selectors`
 
-Selectors let you refer to groups of columns by type or name pattern without
-listing column names explicitly.
+One expression can expand to many columns, resolved against the schema when
+the query runs. Prefer this over building one expression per column in a
+Python loop or comprehension: expanded expressions run in parallel in one
+context, and the code does not need to know the column list up front.
+
+```python
+pl.col("height", "weight")      # explicit names
+pl.col(pl.Float64)              # by dtype (cannot be mixed with names)
+pl.col("^sales_.*$")            # regex — the ^...$ anchors are required
+pl.all()                        # every column (same as pl.col("*"))
+pl.all().exclude("id")          # everything but
+```
+
+Selectors are the richer form: they refer to groups of columns by type or
+name pattern, and compose with set operations.
 
 ```python
 import polars.selectors as cs
@@ -310,6 +323,21 @@ lf.with_columns(cs.string().str.to_uppercase())
 lf.drop(cs.temporal())
 lf.select(pl.all().exclude(cs.categorical()))
 ```
+
+Caveats:
+
+- One `col()` call cannot mix names/regexes with dtypes — use a selector, or
+  two calls.
+- An expanded expression keeps each source name, so two expansions over
+  overlapping columns raise `DuplicateError`. Rename the whole set with
+  `.name.suffix()` / `.name.prefix()` / `.name.map(fn)`; `.alias()` names a
+  single output only.
+- A selector's operators are overloaded for set algebra (`|`, `-`, `&`, `~`).
+  Call `.as_expr()` first when you want the expression meaning instead —
+  e.g. `(~cs.boolean().as_expr())` to negate boolean *values* rather than
+  take the complement of the selected columns.
+- Expansion that matches nothing produces no columns rather than an error, so
+  a typo'd pattern shows up as a missing (or empty) result, not an exception.
 
 ---
 

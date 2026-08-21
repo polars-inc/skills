@@ -7,6 +7,7 @@ in the output, how broadcasting works, and the row count of the result.
 ## Contents
 
 - `select()` — project or transform columns, keep only specified
+  (includes expression expansion: selectors, regex, `pl.all().exclude`)
 - `with_columns()` — add or replace columns, keep all others
 - `filter()` — remove rows
 - `group_by() + agg()` — aggregate per group
@@ -81,13 +82,24 @@ lf.with_columns(
 )
 ```
 
-Generate expressions programmatically, then pass them in one call:
+One context, one expression per distinct operation. When the operation is
+the same for every column, expand instead of generating one expression per
+column:
 
 ```python
 # avoid: loop of with_columns calls, each is a separate context
-# prefer: one call with a comprehension
+for c in ["a", "b", "c"]:
+    lf = lf.with_columns((pl.col(c) * 2).alias(f"{c}_scaled"))
+
+# avoid: a comprehension when the operation is identical per column
+lf.with_columns((pl.col(c) * 2).alias(f"{c}_scaled") for c in ["a", "b", "c"])
+
+# prefer: one expanded expression
+lf.with_columns((pl.col("a", "b", "c") * 2).name.suffix("_scaled"))
+
+# a comprehension is fine when the logic genuinely differs per column
 lf.with_columns(
-    (pl.col(c) * 2).alias(f"{c}_scaled") for c in ["a", "b", "c"]
+    (pl.col(c) * m).alias(f"{c}_scaled") for c, m in factors.items()
 )
 ```
 
@@ -277,5 +289,6 @@ lf.filter(pl.col("year") == 2024).group_by("id").agg(...)   # prefer
 
 # loop of contexts
 for c in cols: lf = lf.with_columns(pl.col(c) * 2)     # avoid
-lf.with_columns(pl.col(*cols) * 2)                     # prefer
+lf.with_columns(pl.col(cols) * 2)                      # prefer, replaces cols
+lf.with_columns((pl.col(cols) * 2).name.suffix("_x"))  # prefer, adds new cols
 ```

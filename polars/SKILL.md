@@ -103,6 +103,16 @@ period-over-period, distributions, time series, cohort-style questions).
 - **Batch column operations.** Pass all expressions to a single
   `with_columns()` call. Expressions in one context run in parallel;
   repeated calls in a loop serialize them.
+- **One expression, many columns (expression expansion).** When the same
+  operation applies to several columns, write one expression and let Polars
+  expand it against the schema — never build one expression per column in a
+  Python loop or comprehension. Select the set with (most to least specific)
+  `pl.col("a", "b")`, `pl.col(pl.Float64)`, `pl.col("^sales_.*$")`,
+  `cs.numeric()` / `cs.starts_with("q_")` (composable with `|`, `-`, `&`,
+  `~`), or `pl.all().exclude("id")`. Rename the whole expanded set with
+  `.name.suffix("_x")` / `.name.prefix()` / `.name.map(fn)`; `.alias()` names
+  a single output only. See `references/expressions.md` for the full selector
+  catalogue.
 - **Chain everything, collect once.** An intermediate `.collect()`
   materializes data and resets the query plan, so optimization restarts
   from scratch on every subsequent step. Build the entire query, then
@@ -118,6 +128,20 @@ period-over-period, distributions, time series, cohort-style questions).
   as a native expression. Read the message and apply the change. Never add
   `warnings.filterwarnings("ignore")` or wrap code in
   `warnings.catch_warnings()` to hide it.
+
+Expansion in practice:
+
+```python
+import polars.selectors as cs
+
+# avoid: same operation, one expression per column
+lf.with_columns([(pl.col(c) * 1.1).alias(f"{c}_adj") for c in ["a", "b", "c"]])
+
+# prefer: one expression, expanded by the schema
+lf.with_columns((pl.col("a", "b", "c") * 1.1).name.suffix("_adj"))
+lf.with_columns(cs.numeric().fill_null(0))          # in place, same names
+lf.select(pl.all().exclude("id").mean().name.suffix("_mean"))
+```
 
 ## Canonical query pattern
 
@@ -188,7 +212,15 @@ Polars 1.x.
   `pl.col("v").mean().over("group")`.
 - **Duplicate output names raise `DuplicateError`.** A computed column
   keeps its source name; `select(pl.col("p"), pl.col("p") * 1.1)` fails.
-  Always `.alias()` derived columns.
+  Always `.alias()` derived columns. The same applies to expansion: two
+  expanded expressions over overlapping columns collide, so rename the whole
+  set with `.name.suffix(...)` rather than `.alias(...)`.
+- **Regex column selection needs `^...$` anchors.** `pl.col("sales_.*")` is
+  read as a literal column name and raises `ColumnNotFoundError`;
+  `pl.col("^sales_.*$")` expands. One `col()` call cannot mix names or
+  regexes with dtypes — use two calls or a selector. An expansion that
+  matches nothing yields no columns instead of erroring, so check the result
+  width when a selector unexpectedly produces an empty frame.
 - **Nulls don't match in joins by default.** Rows with null keys silently
   drop out of inner joins. Pass `nulls_equal=True` to `join()` if null
   keys should match each other.
@@ -233,8 +265,8 @@ index; use it to read the whole file or jump to the relevant section.
   `with_columns`, `filter`, `group_by`/`agg`, `over` (window mapping
   strategies), `sort`, and `join`.
 - `references/expressions.md` - string, temporal, list, struct, and
-  selector syntax; casting; null handling; conditionals. Also contains a
-  **full fetch-map** (18 categories → live docs URLs) for finding or verifying
+  expansion/selector syntax; casting; null handling; conditionals. Also
+  contains a **full fetch-map** (18 categories → live docs URLs) for finding or verifying
   any expression method outside those namespaces.
 - `references/lazy-api.md` - scan options for dirty data, query plan
   inspection with `explain()`, streaming engine for larger-than-memory
