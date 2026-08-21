@@ -35,6 +35,7 @@ Before writing any code:
 | No rounding on monetary/financial aggregations | `.round(2)` on revenue, price, balance columns | |
 | `join_asof(..., tolerance=pl.duration(minutes=5))` | `join_asof(..., tolerance=timedelta(minutes=5))` | `tolerance` expects a Python `datetime.timedelta`, not a Polars duration expression |
 | `pl.col("age").cut([0, 17, 24, 34, 44, 54, 120], labels=[...6...])` | `pl.col("age").cut([17, 24, 34, 44, 54], labels=[...6...])` | Polars `cut` takes only interior boundaries; `n` breaks → `n+1` bins/labels. Outer bounds are implicit. pandas `bins=` includes both outer bounds. |
+| Translating a per-column loop: `for c in cols: df[c] = df[c] * 2` | `lf.with_columns(pl.col(cols) * 2)` | expression expansion — one expression covers the whole set; add `.name.suffix("_x")` to create new columns instead of replacing. Same for `df[cols].fillna(0)` → `pl.col(cols).fill_null(0)` |
 | Column order drift after `with_columns`/`drop` | Finish with an explicit `.select(...)` in pandas order | see note above |
 
 ---
