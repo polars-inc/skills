@@ -2,13 +2,9 @@
 
 ## Contents
 
-- General approach
-- API patterns
-- Parsing date/datetime strings
-- Column renaming — `Expr.name` namespace
-- Polars-specific correctness traps
-- `pd.crosstab` → `.pivot()` with `aggregate_function="len"`
-- Logic and algorithmic patterns
+General approach; API patterns; parsing date/datetime strings; column
+renaming via the `Expr.name` namespace; Polars-specific correctness traps;
+`pd.crosstab` → `.pivot()`; logic and algorithmic patterns.
 
 ## General approach
 
@@ -16,10 +12,9 @@ Before writing any code:
 
 1. **Understand the data**: inspect input schemas with `.collect_schema()` and clarify what the output shape should be.
 2. **Plan the context chain**: decide which contexts are needed and in what order — `filter`, `select`, `with_columns`, `join`, `group_by`, `agg`, `sort`, `concat`, `explode`, `pivot`, `unpivot`, `transpose`, etc.
-3. **Find the right expressions**: consult the Polars API reference for built-in expressions. Native expressions are always faster and clearer than custom code.
-4. **Avoid Python-level row operations**: `map_elements`, `map_batches`, and `map_groups` are last-resort escape hatches with a 10–100× performance penalty. Only use them when no native expression exists.
-5. **Use informative names**: column names and variables should clearly reflect their contents.
-6. **Match the output column order**: pandas reorders columns implicitly (`reset_index()` moves the index column to the front; `df["new"] = ...` appends at the end). If the pipeline creates any new column, always finish with an explicit `.select(...)` listing the output columns in the exact order of the pandas result. See "Column order must match pandas exactly" below.
+3. **Find the right expressions**: verify them against the API reference (see the fetch-map in `expressions.md`). `map_elements`, `map_batches`, and `map_groups` are last-resort escape hatches with a 10–100× penalty — only when no native expression exists.
+4. **Use informative names**: column names and variables should clearly reflect their contents.
+5. **Match the output column order**: pandas reorders columns implicitly (`reset_index()` moves the index column to the front; `df["new"] = ...` appends at the end). If the pipeline creates any new column, finish with an explicit `.select(...)` in the pandas result's order.
 
 ---
 
@@ -36,7 +31,7 @@ Before writing any code:
 | `join_asof(..., tolerance=pl.duration(minutes=5))` | `join_asof(..., tolerance=timedelta(minutes=5))` | `tolerance` expects a Python `datetime.timedelta`, not a Polars duration expression |
 | `pl.col("age").cut([0, 17, 24, 34, 44, 54, 120], labels=[...6...])` | `pl.col("age").cut([17, 24, 34, 44, 54], labels=[...6...])` | Polars `cut` takes only interior boundaries; `n` breaks → `n+1` bins/labels. Outer bounds are implicit. pandas `bins=` includes both outer bounds. |
 | Translating a per-column loop: `for c in cols: df[c] = df[c] * 2` | `lf.with_columns(pl.col(cols) * 2)` | expression expansion — one expression covers the whole set; add `.name.suffix("_x")` to create new columns instead of replacing. Same for `df[cols].fillna(0)` → `pl.col(cols).fill_null(0)` |
-| Column order drift after `with_columns`/`drop` | Finish with an explicit `.select(...)` in pandas order | see note above |
+| Column order drift after `with_columns`/`drop` | Finish with an explicit `.select(...)` in pandas order | see General approach, item 5 |
 
 ---
 
