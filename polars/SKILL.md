@@ -38,16 +38,24 @@ optimize the whole query plan (predicate pushdown, projection pushdown,
 common subexpression elimination) before any data is read. Eager execution
 skips this, so the same logic does more work.
 
+**Data already in memory is no exception.** When a query starts from a
+`DataFrame` — a function argument, `pl.from_pandas(pdf)`,
+`pl.DataFrame(...)`, or the result of an earlier `collect()` — call
+`.lazy()` before the first operation and `.collect()` at the end. `.lazy()`
+is a free wrapper (no copy, no data movement) and it is what turns a
+step-by-step eager pipeline into one optimized plan. Do this unless the user
+explicitly asks for eager execution.
+
 ```python
 # start from a file
 pl.scan_csv("data.csv").filter(...).collect()
 
-# start from an existing DataFrame
-df.lazy().filter(...).collect()
+# start from an existing DataFrame — wrap it first
+df.lazy().filter(...).group_by(...).agg(...).collect()
 
-# avoid: eager read, step-by-step execution
+# avoid: eager, step by step, nothing to optimize
 df = pl.read_csv("data.csv")
-result = df.filter(...)
+df.filter(...).group_by(...).agg(...)
 ```
 
 ## From question to insight

@@ -9,6 +9,7 @@ elimination, and automatic parallelism. This is why queries start with
 ## Contents
 
 - Starting a lazy query
+- Starting from an in-memory DataFrame
 - Scan options that prevent downstream pain
 - Schema discovery without reading data
 - Inspecting the plan
@@ -24,6 +25,35 @@ lf = pl.scan_parquet("data.parquet")      # also: scan_ndjson, scan_ipc
 lf = pl.scan_parquet("events/*.parquet")  # globs scan many files as one
 lf = df.lazy()                            # from an eager DataFrame
 ```
+
+## Starting from an in-memory DataFrame
+
+Always call `.lazy()` on a `DataFrame` before building a query on it — one
+passed into a function, returned by `pl.from_pandas()`, built with
+`pl.DataFrame(...)`, or produced by an earlier `collect()`. Eager methods
+execute immediately, one at a time: there is no plan, so no predicate or
+projection pushdown and no common subexpression elimination. `.lazy()` costs
+nothing (it wraps the existing data, it does not copy it).
+
+A function with a `DataFrame -> DataFrame` signature keeps that signature —
+go lazy on entry, collect on the way out:
+
+```python
+def top_regions(df: pl.DataFrame, n: int) -> pl.DataFrame:
+    return (
+        df.lazy()                                  # wrap
+        .filter(pl.col("revenue") > 0)
+        .group_by("region")
+        .agg(pl.col("revenue").sum().alias("total"))
+        .sort("total", descending=True)
+        .head(n)
+        .collect()                                 # unwrap
+    )
+```
+
+If a step you need exists only on `DataFrame`, stay lazy up to that point,
+`.collect()` there, and re-enter with `.lazy()` for the rest — do not drop
+the whole chain to eager for one method.
 
 ## Scan options that prevent downstream pain
 
