@@ -1,0 +1,39 @@
+{
+  "name": "polars",
+  "version": "0.2.0",
+  "description": "Write fast, idiomatic lazy-API Polars in Python and answer natural-language data questions in one shot. Describes querying, analysis, and pandas-to-Polars translation.",
+  "author": {
+    "name": "Polars",
+    "url": "https://github.com/polars-inc"
+  },
+  "homepage": "https://pola.rs",
+  "repository": "https://github.com/polars-inc/skills",
+  "license": "MIT",
+  "keywords": [
+    "polars",
+    "dataframes",
+    "lazyframe",
+    "data-processing",
+    "data-analysis",
+    "python"
+  ],
+  "skills": "./",
+  "interface": {
+    "displayName": "Polars",
+    "shortDescription": "Fast Python DataFrame guidance for Codex",
+    "longDescription": "Guidance for writing fast, idiomatic lazy-API Polars queries, answering natural-language data questions, and translating pandas patterns to Polars.",
+    "developerName": "Polars",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://pola.rs",
+    "brandColor": "#CD792C",
+    "defaultPrompt": [
+      "Help me write an idiomatic Polars query.",
+      "Translate this pandas code to Polars.",
+      "Answer a data question with lazy Polars."
+    ]
+  }
+}

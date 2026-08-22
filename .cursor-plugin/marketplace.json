@@ -1,0 +1,16 @@
+{
+  "name": "polars",
+  "owner": {
+    "name": "Polars"
+  },
+  "metadata": {
+    "description": "Official Polars Cursor plugin marketplace for fast, idiomatic Python data workflows."
+  },
+  "plugins": [
+    {
+      "name": "polars",
+      "source": "polars",
+      "description": "Write fast, idiomatic lazy-API Polars in Python and answer natural-language data questions in one shot."
+    }
+  ]
+}

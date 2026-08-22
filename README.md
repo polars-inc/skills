@@ -1,10 +1,14 @@
-# Polars Plugin Marketplace
+# Polars Skill Marketplace
 
-Official Claude Code plugin marketplace for [Polars](https://pola.rs) — the fast DataFrame library for Python.
+Official agent skill marketplace for [Polars](https://pola.rs) — the fast
+DataFrame library for Python. Supports Claude Code, Codex, and multi-platform
+skill installers.
 
 ## Install
 
-Add this marketplace, then install the Polars plugin:
+Add this marketplace, then install the Polars plugin.
+
+### Claude Code
 
 ```
 /plugin marketplace add polars-inc/skills
@@ -12,6 +16,21 @@ Add this marketplace, then install the Polars plugin:
 ```
 
 Start a session. Claude Code loads the skill whenever a task involves Polars or Python data processing. To invoke it explicitly, type `/polars:polars`.
+
+### Codex
+
+```bash
+codex plugin marketplace add polars-inc/skills
+codex plugin add polars@polars
+```
+
+### Multi-platform installers
+
+Use the `npx` installer for Cursor and other agent tools:
+
+```bash
+npx skill install polars-inc/skills
+```
 
 ## Plugins
 
