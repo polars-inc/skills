@@ -95,7 +95,8 @@ polars/
     ├── expressions.md          # str, dt, list, struct, selectors, cast, when/then
     ├── insight-recipes.md      # natural-language question to query recipes
     ├── lazy-api.md             # scan options, query plan inspection, streaming
-    └── pandas-to-polars.md     # API pattern differences and correctness traps
+    ├── pandas-to-polars.md     # API pattern differences and correctness traps
+    └── sql.md                  # SQL interface, dialect notes, function map
 ```
 
 Reference files are loaded on demand. The agent reads them only when the

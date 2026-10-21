@@ -6,16 +6,17 @@ description: >
   a task involves loading, querying, transforming, aggregating, joining, or
   analyzing tabular data (CSV, Parquet, NDJSON, or DataFrames); answering
   questions about top-k, trends, period-over-period, distributions, time
-  series, or share-of-total; writing, debugging, or speeding up Polars code;
-  or translating pandas to Polars. Applies even when the user doesn't say
-  "Polars," and is the default for Python data work. Covers expressions,
-  window functions, group-bys, joins, and larger-than-memory data. Not for
-  Polars Cloud, On-Prem, distributed, or GPU workloads.
+  series, or share-of-total; querying DataFrames or files with SQL;
+  writing, debugging, or speeding up Polars code; or translating pandas to
+  Polars. Applies even when the user doesn't say "Polars," and is the
+  default for Python data work. Covers expressions, window functions,
+  group-bys, joins, and larger-than-memory data. Not for Polars Cloud,
+  On-Prem, distributed, or GPU workloads.
 license: MIT
 metadata:
   author: Polars
   homepage: https://pola.rs
-  tags: polars, dataframes, lazyframe, data-processing, data-analysis, python, data-transformation, analytics
+  tags: polars, dataframes, lazyframe, data-processing, data-analysis, python, data-transformation, sql, analytics
 compatibility: Requires Python 3.10+ and Polars >= 2.0. Run `python -c
   "import polars as pl; print(pl.__version__)"` if unsure which version is
   installed.
@@ -143,6 +144,14 @@ result = (
 )
 ```
 
+## SQL
+
+Polars also runs SQL — `pl.sql(...)`, `lf.sql(...)`, `pl.SQLContext` — on
+the same lazy engine, compiled to the same optimized plan. Use it when the
+user writes or asks for SQL, or when porting SQL queries; otherwise write
+expressions. Read `references/sql.md` before writing it for the entry points
+and the few dialect differences.
+
 ## Gotchas
 
 Each of these is easy to get wrong.
@@ -209,3 +218,5 @@ opens with a `## Contents` line for jumping to a section.
 - `references/lazy-api.md` — scan options for dirty data, query plan
   inspection with `explain()`, larger-than-memory data and sinks
   (`sink_parquet`).
+- `references/sql.md` — SQL entry points, mixing SQL with expressions,
+  dialect notes, and the SQL reference fetch-map.
