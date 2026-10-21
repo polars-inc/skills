@@ -1,0 +1,16 @@
+{
+  "name": "polars",
+  "owner": {
+    "name": "Polars"
+  },
+  "metadata": {
+    "description": "Make your coding agent a Polars expert. Official skills from the team behind Polars."
+  },
+  "plugins": [
+    {
+      "name": "polars",
+      "source": "./",
+      "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL on DataFrames, and translate pandas to Polars."
+    }
+  ]
+}

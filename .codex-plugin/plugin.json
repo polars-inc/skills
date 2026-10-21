@@ -1,0 +1,44 @@
+{
+  "name": "polars",
+  "version": "0.4.0",
+  "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL on DataFrames, and translate pandas to Polars.",
+  "author": {
+    "name": "Polars",
+    "url": "https://pola.rs"
+  },
+  "homepage": "https://pola.rs",
+  "repository": "https://github.com/polars-inc/skills",
+  "license": "MIT",
+  "keywords": [
+    "polars",
+    "python",
+    "dataframes",
+    "lazyframe",
+    "data-processing",
+    "data-analysis",
+    "data-transformation",
+    "analytics",
+    "sql",
+    "pandas"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Polars",
+    "shortDescription": "Fast, idiomatic Polars for Python data work",
+    "longDescription": "Teaches the agent to write fast, idiomatic Polars: lazy queries with a single collect, native expressions instead of Python functions, one-shot answers to data questions, SQL on DataFrames, and pandas-to-Polars translation.",
+    "developerName": "Polars",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://pola.rs",
+    "brandColor": "#0075FF",
+    "defaultPrompt": [
+      "Help me write fast Polars queries.",
+      "Translate this pandas code to Polars.",
+      "Analyze this CSV file.",
+      "Generate insights from these numbers."
+    ]
+  }
+}

@@ -10,7 +10,8 @@ with a single `collect()`.
 
 Starting a lazy query; starting from an in-memory DataFrame; scan options
 that prevent downstream pain; schema discovery without reading data;
-inspecting the plan; executing; larger-than-memory streaming and sinks.
+inspecting the plan; executing; larger-than-memory data and sinks; on Polars
+1.x.
 
 ## Starting a lazy query
 
@@ -110,15 +111,11 @@ by_month = base.group_by(pl.col("date").dt.month()).agg(pl.col("rev").sum())
 region_df, month_df = pl.collect_all([by_region, by_month])
 ```
 
-## Larger-than-memory: streaming and sinks
+## Larger-than-memory data and sinks
 
-```python
-result = lf.collect(engine="streaming")    # process in batches
-```
-
-The streaming engine executes the plan in chunks, so datasets larger than
-RAM still complete. For large outputs, skip materialization and sink straight
-to disk:
+`collect()` runs on the streaming engine by default, which processes queries
+in batches to reduce memory pressure. When the result is too large to hold in
+memory, write it to disk with a sink instead of collecting it:
 
 ```python
 lf.sink_parquet("out.parquet")
@@ -126,5 +123,17 @@ lf.sink_csv("out.csv")
 lf.sink_ndjson("out.ndjson")
 ```
 
-Use streaming or sinks when the input is much larger than memory, or when a
-regular `collect()` is killed by the OS.
+## On Polars 1.x
+
+This skill targets Polars 2.0. On 1.x (check `pl.__version__`), adjust:
+
+- Pass `engine="streaming"` to `collect()` and `pl.collect_all()`; 1.x runs
+  on the in-memory engine by default.
+- Bin with `cut` / `qcut`: `bin_intervals(breaks, labels=..., right_closed=True)`
+  becomes `cut(breaks, labels=...)`, and
+  `bin_quantiles(n, labels=..., right_closed=True)` becomes
+  `qcut(n, labels=...)`.
+- Pass `empty_as_null=False` to `explode()`: same result (empty lists produce
+  no rows) without a deprecation warning.
+- In SQL, numeric literals are `Float64` (`price * 1.1` is `Float64`), and
+  errors raise when the query is built rather than at `collect()`.
