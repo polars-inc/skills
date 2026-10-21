@@ -1,0 +1,16 @@
+{
+  "name": "polars",
+  "owner": {
+    "name": "Polars"
+  },
+  "metadata": {
+    "description": "Official Polars marketplace: agent skills for writing fast, idiomatic Polars in Python."
+  },
+  "plugins": [
+    {
+      "name": "polars",
+      "source": "./",
+      "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL on DataFrames, and translate pandas to Polars."
+    }
+  ]
+}

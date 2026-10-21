@@ -16,7 +16,7 @@ license: MIT
 metadata:
   author: Polars
   homepage: https://pola.rs
-  tags: polars, dataframes, lazyframe, data-processing, data-analysis, python, data-transformation, sql, analytics
+  tags: polars, python, dataframes, lazyframe, data-processing, data-analysis, data-transformation, analytics, sql, pandas
 compatibility: Requires Python 3.10+ and Polars >= 2.0. Run `python -c
   "import polars as pl; print(pl.__version__)"` if unsure which version is
   installed.

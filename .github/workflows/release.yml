@@ -12,9 +12,22 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Check manifest versions match
+        run: |
+          manifests="plugin.json .claude-plugin/plugin.json .codex-plugin/plugin.json .cursor-plugin/plugin.json"
+          if [ "$(jq -r .version $manifests | sort -u | wc -l)" -ne 1 ]; then
+            echo "Manifest versions differ:"
+            jq -r '"  \(input_filename): \(.version)"' $manifests
+            exit 1
+          fi
+        shell: bash
+
       - name: Extract version from JSON
         id: version
-        run: echo "version=$(jq -r .version polars/.claude-plugin/plugin.json)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(jq -r .version plugin.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Build skill zip for claude.ai upload
+        run: cd skills && zip -r ../polars.zip polars
 
       - name: Create release if tag is missing
         env:
@@ -24,6 +37,6 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Release $tag already exists; skipping."
           else
-            gh release create "$tag" --title "$tag" --generate-notes --target "$GITHUB_SHA"
+            gh release create "$tag" polars.zip --title "$tag" --generate-notes --target "$GITHUB_SHA"
           fi
         shell: bash
