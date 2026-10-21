@@ -3,7 +3,7 @@
   "owner": {
     "name": "Polars"
   },
-  "description": "Official Polars marketplace: agent skills for writing fast, idiomatic Polars in Python.",
+  "description": "Make your coding agent a Polars expert. Official skills from the team behind Polars.",
   "plugins": [
     {
       "name": "polars",
