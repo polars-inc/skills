@@ -29,7 +29,7 @@ Before writing any code:
 | `(col >= a) & (col <= b)` | `col.is_between(a, b)` | for numeric ranges (closed) |
 | No rounding on monetary/financial aggregations | `.round(2)` on revenue, price, balance columns | |
 | `join_asof(..., tolerance=pl.duration(minutes=5))` | `join_asof(..., tolerance=timedelta(minutes=5))` | `tolerance` expects a Python `datetime.timedelta`, not a Polars duration expression |
-| `pl.col("age").cut([0, 17, 24, 34, 44, 54, 120], labels=[...6...])` | `pl.col("age").cut([17, 24, 34, 44, 54], labels=[...6...])` | Polars `cut` takes only interior boundaries; `n` breaks → `n+1` bins/labels. Outer bounds are implicit. pandas `bins=` includes both outer bounds. |
+| `pd.cut(df["age"], bins=[0, 17, 24, 34, 44, 54, 120], labels=[...6...])` | `pl.col("age").bin_intervals([17, 24, 34, 44, 54], labels=[...6...], right_closed=True)` | `bin_intervals` takes only interior breakpoints: `n` breaks → `n+1` bins/labels, outer bounds implicit (pandas `bins=` includes both). `right_closed=True` matches pandas `(a, b]` bins. `pd.qcut(s, 4)` → `bin_quantiles(4, labels=[...], right_closed=True)` |
 | Translating a per-column loop: `for c in cols: df[c] = df[c] * 2` | `lf.with_columns(pl.col(cols) * 2)` | expression expansion — one expression covers the whole set; add `.name.suffix("_x")` to create new columns instead of replacing. Same for `df[cols].fillna(0)` → `pl.col(cols).fill_null(0)` |
 | `col.str.capitalize()` | `col.str.slice(0, 1).str.to_uppercase() + col.str.slice(1).str.to_lowercase()` | there is no `str.capitalize`. `str.to_titlecase()` is **not** a substitute — it upcases every word, so `"at_home"` becomes `"At_Home"`, not `"At_home"` |
 | `col.interpolate(limit=n)` | `col.interpolate()` — Polars has no `limit` | do not hand-roll the limit with a UDF; `forward_fill(limit=n)` *does* take one |
@@ -95,6 +95,7 @@ df.select(pl.all().name.prefix("raw_"))
 | `float(bool_series.sum()) / len(df)` | `bool_series.sum() / df.height` | Polars division already returns float; use `.height` not `len()` for row count |
 | `float(int_expr / int_expr)` | `int_expr / int_expr` | Polars strict typing: int ÷ int → float automatically, no `float()` cast needed |
 | `round(row['col'], n)` inside `iter_rows()` loop | `.agg(pl.col(...).mean().round(n))` then `row['col']` directly | Python `round()` raises `TypeError` on `None`; round inside the expression instead |
+| Relying on row order after `merge` / `groupby` | `.sort(...)` at the end, or `join(..., maintain_order="left")` | pandas keeps the left order in a left merge and sorts `groupby` keys; Polars joins and group-bys return rows in no guaranteed order |
 
 ---
 
@@ -105,20 +106,24 @@ df.select(pl.all().name.prefix("raw_"))
 pd.crosstab(df["age_group"], df["activity_quartile"])
 
 # Polars
-df.pivot(
-    on="activity_quartile",
-    index="age_group",
-    values="activity_quartile",
-    aggregate_function="len",
-    sort_columns=True,
+(
+    lf.pivot(
+        on="activity_quartile",
+        on_columns=["q1", "q2", "q3", "q4"],
+        index="age_group",
+        values="activity_quartile",
+        aggregate_function="len",
+    )
+    .sort("age_group")
+    .collect()
 )
 ```
 
 Key details:
+- A lazy `pivot` needs `on_columns=`: the output columns, in order. When the values aren't known up front, get them with `lf.select(pl.col("activity_quartile").unique().sort()).collect().to_series()`.
 - Passing the **same column to `on` and `values`** works — no throwaway/sentinel column needed.
 - `aggregate_function="len"` produces **zeros** for empty cells, not nulls — no `.fill_null(0)` needed (unlike `"first"`, `"sum"`, etc.).
-- `sort_columns=True` gives deterministic column order (e.g. q1 → q2 → q3 → q4).
-- `.pivot()` is available on **LazyFrames** as well as DataFrames.
+- Pivot rows come back in no guaranteed order; `.sort()` on the index matches pandas.
 
 ---
 

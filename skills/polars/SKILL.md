@@ -17,9 +17,9 @@ metadata:
   author: Polars
   homepage: https://pola.rs
   tags: polars, python, dataframes, lazyframe, data-processing, data-analysis, data-transformation, analytics, sql, pandas
-compatibility: Requires Python 3.10+ and Polars >= 2.0. Run `python -c
-  "import polars as pl; print(pl.__version__)"` if unsure which version is
-  installed.
+compatibility: Requires Python 3.10+. Written for Polars >= 2.0; Polars 1.x
+  differences are in references/lazy-api.md. Run `python -c "import polars
+  as pl; print(pl.__version__)"` if unsure which version is installed.
 ---
 
 # Polars
@@ -28,10 +28,11 @@ compatibility: Requires Python 3.10+ and Polars >= 2.0. Run `python -c
 
 Use Polars for data processing. Always use the lazy API: build the whole
 query, then execute it with one `.collect()`, so Polars can optimize the plan
-before any data is read. `.collect()` runs on the streaming engine, so data
-larger than memory works too. Do not collect intermediate results: each
-`.collect()` materializes data and discards the plan, so everything after it
-optimizes from scratch. Eager code skips the optimizer and does more work.
+before any data is read. `.collect()` runs on the streaming engine, which
+processes data in batches to reduce memory pressure. Do not collect
+intermediate results: each `.collect()` materializes data and discards the
+plan, so everything after it optimizes from scratch. Eager code skips the
+optimizer and does more work.
 
 **Data already in memory is no exception.** When a query starts from a
 `DataFrame` — a function argument, `pl.from_pandas(pdf)`,
@@ -188,7 +189,9 @@ Each of these is easy to get wrong.
 
 Before writing a method call you are not certain about, verify it against
 the installed version rather than memory. Do not assume a pandas spelling
-exists in Polars: there is no index, no `iloc`, no `groupby`.
+exists in Polars: there is no index, no `iloc`, no `groupby`. On Polars 1.x,
+read the "On Polars 1.x" section at the end of `references/lazy-api.md`
+first.
 
 - **If the `polars-mcp` server's tools are available, use them:**
   `polars_search_api("filter")` finds methods by keyword,
@@ -217,6 +220,6 @@ opens with a `## Contents` line for jumping to a section.
   fetch-map described above.
 - `references/lazy-api.md` — scan options for dirty data, query plan
   inspection with `explain()`, larger-than-memory data and sinks
-  (`sink_parquet`).
+  (`sink_parquet`), and the differences on Polars 1.x.
 - `references/sql.md` — SQL entry points, mixing SQL with expressions,
   dialect notes, and the SQL reference fetch-map.

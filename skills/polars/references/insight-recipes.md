@@ -97,13 +97,17 @@ broadcasts. The same trick works pre-aggregation with
         pl.col("order_value").max().alias("max"),
         pl.len().alias("n"),
     )
+    .sort("segment")
     .collect()
 )
 
-# Binning: fixed edges with cut, equal-sized buckets with qcut
+# Binning: quartiles with bin_quantiles; fixed edges with
+# bin_intervals([50, 100, 500], labels=[...4 labels...], right_closed=True)
 (
     lf.with_columns(
-        bucket=pl.col("order_value").qcut(4, labels=["q1", "q2", "q3", "q4"])
+        bucket=pl.col("order_value").bin_quantiles(
+            4, labels=["q1", "q2", "q3", "q4"], right_closed=True
+        )
     )
     .group_by("bucket")
     .agg(pl.len().alias("n"), pl.col("order_value").mean().alias("avg"))
@@ -142,6 +146,7 @@ for one series per category.
             .sum().alias("pending"),
         (pl.col("status") == "refunded").sum().alias("refund_count"),
     )
+    .sort("region")
     .collect()
 )
 ```
@@ -172,6 +177,7 @@ counts how often it is true.
         pl.col("customer_id").n_unique().alias("customers"),
         pl.col("order_id").null_count().alias("missing_orders"),
     )
+    .sort("region")
     .collect()
 )
 ```
