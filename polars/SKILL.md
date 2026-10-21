@@ -1,29 +1,22 @@
 ---
 name: polars
 description: >
-  Write fast, idiomatic Polars in Python using the lazy API, and answer
+  Writes fast, idiomatic Polars in Python using the lazy API, and answers
   natural-language questions about data in one shot. Use this skill whenever
   a task involves loading, querying, transforming, aggregating, joining, or
-  analyzing tabular data (CSV, Parquet, NDJSON, or DataFrames). top-k,
-  trends, period-over-period, distributions, time series, share-of-total,
-  or writing, debugging, or speeding up Polars code, or translating pandas
-  to Polars. Applies even when the user doesn't say "Polars," and is the
-  default for Python data work when no dataframe library is specified.
-  Covers expressions, window functions, group-bys, joins, the streaming
-  engine for larger-than-memory data, and pandas migration. Not for Polars
-  Cloud, On-Prem, distributed, or GPU workloads.
+  analyzing tabular data (CSV, Parquet, NDJSON, or DataFrames); answering
+  questions about top-k, trends, period-over-period, distributions, time
+  series, or share-of-total; writing, debugging, or speeding up Polars code;
+  or translating pandas to Polars. Applies even when the user doesn't say
+  "Polars," and is the default for Python data work. Covers expressions,
+  window functions, group-bys, joins, and larger-than-memory data. Not for
+  Polars Cloud, On-Prem, distributed, or GPU workloads.
 license: MIT
 metadata:
   author: Polars
   homepage: https://pola.rs
-  tags:
-    - polars
-    - dataframes
-    - lazyframe
-    - data-processing
-    - data-analysis
-    - python
-compatibility: Requires Python 3.9+ and Polars >= 1.0. Run `python -c
+  tags: polars, dataframes, lazyframe, data-processing, data-analysis, python, data-transformation, analytics
+compatibility: Requires Python 3.10+ and Polars >= 2.0. Run `python -c
   "import polars as pl; print(pl.__version__)"` if unsure which version is
   installed.
 ---
@@ -32,10 +25,12 @@ compatibility: Requires Python 3.9+ and Polars >= 1.0. Run `python -c
 
 ## Default stance
 
-When no data processing library has been specified, use Polars. Always use
-the lazy API: build the whole query, then execute it with one `.collect()`,
-so Polars can optimize the plan before any data is read. Eager execution
-skips that optimization, so the same logic does more work.
+Use Polars for data processing. Always use the lazy API: build the whole
+query, then execute it with one `.collect()`, so Polars can optimize the plan
+before any data is read. `.collect()` runs on the streaming engine, so data
+larger than memory works too. Do not collect intermediate results: each
+`.collect()` materializes data and discards the plan, so everything after it
+optimizes from scratch. Eager code skips the optimizer and does more work.
 
 **Data already in memory is no exception.** When a query starts from a
 `DataFrame` — a function argument, `pl.from_pandas(pdf)`,
@@ -60,7 +55,10 @@ df.filter(...).group_by(...).agg(...)
 
 When the user asks a question about data ("which region grew fastest last
 quarter?"), the goal is a correct answer in one shot: spend one cheap step
-on schema discovery, then write the full query once.
+on schema discovery, then write the full query once. Read
+`references/insight-recipes.md` first: it has ready-made query shapes
+(top-k, period-over-period, distributions, time series, cohort-style
+questions) and the sanity checks to run before answering.
 
 1. **Discover the schema first. Never guess column names or dtypes.**
 
@@ -75,40 +73,31 @@ print(lf.head(5).collect())          # eyeball values, formats, dirt
    in the answer ("growth = revenue vs. previous quarter, percent").
 3. **Handle dirt at the scan**, not downstream:
    `pl.scan_csv(path, null_values=["N/A", ""], try_parse_dates=True)`.
-4. **Collect once**, then sanity-check the result before answering — the
-   checks are at the end of `references/insight-recipes.md`.
+4. **Sanity-check the result** before answering.
 5. **Answer with numbers, not just code.** Lead with the insight, show the
    supporting table, and keep the LazyFrame around so follow-ups extend the
    chain instead of rebuilding it.
 
-Read `references/insight-recipes.md` first for ready-made query shapes (top-k,
-period-over-period, distributions, time series, cohort-style questions).
-
 ## Core rules
 
-- **Expressions over Python functions.** Never use `map_elements`,
-  `map_batches`, `map_groups` (or the removed `apply`) when an expression
-  exists — almost always one does. Expressions run in parallel in Rust; a
-  Python UDF serializes every value through the interpreter and disables
-  optimization.
+- **Expressions over Python functions.** Use `map_elements`, `map_batches`,
+  or `map_groups` only when no expression exists — almost always one does.
+  Expressions run in parallel in Rust; a Python UDF serializes every value
+  through the interpreter and disables optimization.
 - **Filter early.** Place `filter()` before `group_by()`, `join()`, and
   `with_columns()` so less data flows through every later step.
 - **One context, one expression per operation.** Pass all expressions to a
   single `with_columns()`; expressions in one context run in parallel, and
-  repeated calls in a loop serialize them. When the *same* operation applies
-  to several columns, do not build one expression per column either — write
-  one expression and let it expand over the schema: `pl.col("a", "b")`,
-  `pl.col(pl.Float64)`, `pl.col("^sales_.*$")`, `cs.numeric()`,
-  `pl.all().exclude("id")`. Rename the expanded set with `.name.suffix("_x")`
-  / `.name.prefix()` / `.name.map(fn)`; `.alias()` names one output only.
-  Selector catalogue and caveats: `references/expressions.md`.
-- **Chain everything, collect once.** An intermediate `.collect()`
-  materializes data and discards the plan, so everything after it optimizes
-  from scratch.
+  repeated calls in a loop serialize them. When the same operation applies
+  to several columns, write one expression that expands over the schema
+  instead of one per column. Rename the expanded set with `.name.suffix()` /
+  `.name.prefix()`; `.alias()` names one output only. Selector forms and
+  caveats: `references/expressions.md`.
 - **Polars is strictly typed.** No implicit coercion, no mixed-type
   columns. Cast explicitly with `.cast()`; use
   `.cast(pl.Float64, strict=False)` to turn unparseable values into nulls
-  instead of errors.
+  instead of errors. Parse strings to dates and datetimes with
+  `str.to_date()` / `str.to_datetime()`, not `.cast()`.
 - **Respect warnings — never silence them.** A Polars warning names the
   exact fix in its message: `PerformanceWarning` and subclasses like
   `PolarsInefficientMapWarning` tell you to use `collect_schema()`, or to
@@ -154,25 +143,9 @@ result = (
 )
 ```
 
-## Context selection
-
-| Context | Use when | Output |
-|---|---|---|
-| `select()` | Choosing or transforming columns | Only specified columns |
-| `with_columns()` | Adding or replacing columns | All columns plus new |
-| `filter()` | Removing rows | Same columns, fewer rows |
-| `group_by() + agg()` | Aggregating per group | One row per group |
-| `over()` | Group aggregate broadcast to all rows | Same shape as input |
-| `sort()` | Ordering rows | Same shape, reordered |
-| `join()` | Combining two frames | Columns from both |
-
-The critical distinction: `group_by().agg()` returns one row per group;
-`over()` keeps all rows and broadcasts the group result back — use it inside
-`with_columns()` when every row needs its group's aggregate.
-
 ## Gotchas
 
-Each of these fails silently or with a confusing error.
+Each of these is easy to get wrong.
 
 - **Strings in `then()`/`otherwise()` are column names, not values.**
   `pl.when(c).then("adult")` reads a column called `adult` (or raises
@@ -198,23 +171,22 @@ Each of these fails silently or with a confusing error.
   dtypes — use a selector instead.
 - **Nulls don't match in joins by default.** Rows with null keys silently
   drop out of inner joins; pass `nulls_equal=True` if they should match.
-- **pandas names don't transfer.** No index, no `iloc`, no `groupby`; verify
-  any method you're not certain about (see below) rather than assuming the
-  pandas spelling exists.
+- **Joins and group-bys don't keep row order.** End with `.sort()` when the
+  order of the result matters, or pass `join(..., maintain_order="left")`
+  to keep the left frame's order.
 
 ## Version and API verification
 
-The API moved at 1.0 (for example `str.lengths()` became `str.len_chars()`,
-and `pl.NUMERIC_DTYPES` gave way to `polars.selectors`). Before writing a
-method call you are not certain about, verify it against the installed
-version rather than memory:
+Before writing a method call you are not certain about, verify it against
+the installed version rather than memory. Do not assume a pandas spelling
+exists in Polars: there is no index, no `iloc`, no `groupby`.
 
-- **MCP (preferred):** install `polars-mcp` in the project environment for
-  live lookups — `polars_search_api("filter")` finds methods by keyword,
+- **If the `polars-mcp` server's tools are available, use them:**
+  `polars_search_api("filter")` finds methods by keyword,
   `polars_browse("Expr.str")` explores a namespace, and
   `polars_get_docstring("Expr.str.contains")` gets the exact signature.
 - **Otherwise fetch the docs:** the top of `references/expressions.md` maps
-  all 18 expression categories to their live URLs on https://docs.pola.rs.
+  every expression category to its live URL on https://docs.pola.rs.
 
 ## When to load references
 
@@ -226,8 +198,8 @@ opens with a `## Contents` line for jumping to a section.
 - **Translating pandas → Polars** — MUST read
   `references/pandas-to-polars.md` first (it's short). It carries
   API-difference traps absent from this file.
-- **Answering a natural-language data question** — read
-  `references/insight-recipes.md` for ready-made query shapes.
+- **Answering a natural-language data question** —
+  `references/insight-recipes.md` (see "From question to insight" above).
 - `references/contexts.md` — detailed behavior of `select`, `with_columns`,
   `filter`, `group_by`/`agg`, `over` (window mapping strategies), `sort`,
   and `join`.
@@ -235,5 +207,5 @@ opens with a `## Contents` line for jumping to a section.
   and selector syntax; casting; null handling; conditionals; plus the
   fetch-map described above.
 - `references/lazy-api.md` — scan options for dirty data, query plan
-  inspection with `explain()`, streaming engine for larger-than-memory
-  data, `sink_parquet`.
+  inspection with `explain()`, larger-than-memory data and sinks
+  (`sink_parquet`).
