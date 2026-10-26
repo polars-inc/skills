@@ -14,13 +14,13 @@ casting; `when / then / otherwise`.
 
 The snippets below are a fast path. For any method you are not certain about
 — or a namespace not covered here — **fetch the live docs rather than
-guessing**; the API changed at 1.0.
+guessing**.
 
 **Prefer `polars-mcp`** when it is installed in the project environment
 (`polars_search_api("keyword")` / `polars_get_docstring("Expr.str.contains")`).
 **Fall back to `WebFetch`** when it isn't: fetch
 `https://docs.pola.rs/api/python/stable/reference/expressions/<slug>.html`
-(use `stable`, it covers all of Polars 1.x) and ask for every method in the
+(use `stable`) and ask for every method in the
 namespace with its current signature and a one-line description.
 
 ### Category → URL map
@@ -64,10 +64,10 @@ pl.col("text").str.strip_chars()                # whitespace, both sides
 pl.col("text").str.strip_chars_start()          # also: strip_chars_end()
 pl.col("text").str.strip_chars(" ,-")           # strip specific characters
 
-pl.col("text").str.replace("old", "new")        # first match, literal
-pl.col("text").str.replace("pat", "new", n=1)   # n-th match
-pl.col("text").str.replace_all("old", "new")    # all matches
-pl.col("text").str.replace_all(r"\s+", " ")     # regex
+pl.col("text").str.replace(r"\d+", "#")         # first match; patterns are regex
+pl.col("text").str.replace("a.b", "-", literal=True)  # literal match
+pl.col("text").str.replace("old", "new", n=2)   # first 2 matches
+pl.col("text").str.replace_all(r"\s+", " ")     # all matches
 
 pl.col("text").str.slice(0, 5)                  # chars 0..5
 pl.col("text").str.head(3)                      # first 3 chars (also: tail)
@@ -97,7 +97,7 @@ pl.col("d").str.to_datetime()
 
 # Custom format — pandas directives carry over, except %f (microseconds),
 # which becomes %.f in Polars (%.f parses ".123456" correctly)
-pl.col("d").str.to_datetime("%Y-%m-%d %.f")
+pl.col("d").str.to_datetime("%Y-%m-%d %H:%M:%S%.f")
 
 # Strings contain time but you want date precision: parse then truncate
 pl.col("d").str.to_datetime().dt.truncate("1d")
@@ -185,7 +185,7 @@ pl.col("tags").list.unique()                # order not preserved
 pl.col("a").list.concat(pl.col("b"))        # concatenate two list columns
 pl.col("tags").list.join(", ")              # join into a single string
 
-# Explode: one row per list element
+# Explode: one row per list element; empty lists produce no rows
 lf.explode("tags")
 
 # Apply expression to each element without leaving the engine
@@ -219,8 +219,8 @@ pl.col("address").struct.with_fields(
     pl.field("city").str.to_uppercase()
 )
 
-# Parse JSON-embedded columns
-pl.col("payload").str.json_decode()    # String -> Struct or List
+# Parse JSON-embedded columns: pass the target dtype
+pl.col("payload").str.json_decode(pl.Struct({"id": pl.Int64, "name": pl.String}))
 ```
 
 ---
@@ -250,7 +250,7 @@ import polars.selectors as cs
 cs.numeric()        # Int*, UInt*, Float*
 cs.integer()        # Int*, UInt*
 cs.float()          # Float32, Float64
-cs.string()         # Utf8 / String
+cs.string()         # String
 cs.boolean()
 cs.temporal()       # Date, Datetime, Duration, Time
 cs.categorical()
@@ -276,7 +276,7 @@ lf.select(cs.numeric())
 lf.select((cs.float() * 1.21).name.suffix("_with_tax"))
 lf.with_columns(cs.string().str.to_uppercase())
 lf.drop(cs.temporal())
-lf.select(pl.all().exclude(cs.categorical()))
+lf.select(cs.all() - cs.categorical())
 ```
 
 Caveats:
@@ -308,6 +308,7 @@ pl.col("price").cast(pl.Float64, strict=False)
 # Common patterns
 pl.col("ts_ms").cast(pl.Datetime("ms"))    # epoch ms to Datetime
 pl.col("date_int").cast(pl.Date)           # epoch days to Date
+pl.col("date_str").str.to_date()           # strings: parse, don't cast (see above)
 
 # Inspect the dtype before casting
 lf.collect_schema()["col_name"]
@@ -322,17 +323,21 @@ values in `pl.lit()`.
 
 ```python
 # Basic conditional
-pl.when(pl.col("age") >= 18)
-  .then(pl.lit("adult"))
-  .otherwise(pl.lit("minor"))
-  .alias("age_group")
+(
+    pl.when(pl.col("age") >= 18)
+    .then(pl.lit("adult"))
+    .otherwise(pl.lit("minor"))
+    .alias("age_group")
+)
 
 # Multiple conditions (CASE WHEN)
-pl.when(pl.col("score") >= 90).then(pl.lit("A"))
-  .when(pl.col("score") >= 80).then(pl.lit("B"))
-  .when(pl.col("score") >= 70).then(pl.lit("C"))
-  .otherwise(pl.lit("F"))
-  .alias("grade")
+(
+    pl.when(pl.col("score") >= 90).then(pl.lit("A"))
+    .when(pl.col("score") >= 80).then(pl.lit("B"))
+    .when(pl.col("score") >= 70).then(pl.lit("C"))
+    .otherwise(pl.lit("F"))
+    .alias("grade")
+)
 
 # Null handling
 pl.col("v").fill_null(0)

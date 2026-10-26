@@ -118,14 +118,14 @@ lf.group_by(
 Aggregation building blocks:
 
 ```python
-pl.col("v").sum() / .mean() / .median() / .std() / .min() / .max()
+pl.col("v").sum()                   # also: mean, median, std, min, max
 pl.col("v").quantile(0.95)          # e.g. 0.95 = 95th percentile
 pl.len()                            # rows in group, nulls included
 pl.col("v").count()                 # non-null values
 pl.col("v").null_count()            # null values in group
 pl.col("v").n_unique()              # distinct values in group
-pl.col("v").first() / .last()       # order = current row order within group
-pl.col("v").implode()           # collect group values into a list
+pl.col("v").first()                 # also: last(); current row order within group
+pl.col("v").implode()               # collect group values into a list
 ```
 
 Conditional aggregation, the workhorse for breakdown questions —
@@ -211,6 +211,8 @@ Join facts that bite:
   `result.null_count()` after joining.
 - If the right key is not unique, the left side fans out: more rows after
   an inner/left join means duplicate keys on the right.
+- Joins don't keep row order. Pass `maintain_order="left"` to keep the left
+  frame's order, or `.sort()` the result.
 - Anti joins are the idiomatic "which X never did Y".
 
 ---

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "polars",
+  "version": "0.4.0",
+  "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL on DataFrames, and translate pandas to Polars.",
+  "author": {
+    "name": "Polars",
+    "url": "https://pola.rs"
+  },
+  "homepage": "https://pola.rs",
+  "repository": "https://github.com/polars-inc/skills",
+  "license": "MIT",
+  "keywords": [
+    "polars",
+    "python",
+    "dataframes",
+    "lazyframe",
+    "data-processing",
+    "data-analysis",
+    "data-transformation",
+    "analytics",
+    "sql",
+    "pandas"
+  ]
+}
