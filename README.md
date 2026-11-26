@@ -7,11 +7,14 @@ library for Python. It teaches coding agents to write fast, idiomatic Polars:
 - Write native expressions instead of `map_elements` or pandas-style code
 - Choose the right context (`select`, `with_columns`, `filter`, `group_by`, `over`)
 - Answer natural-language data questions in one shot
-- Run SQL on DataFrames and translate pandas to Polars
+- Run SQL on DataFrames, files, and databases, and translate pandas to Polars
+- Handle larger-than-memory data: memory budgets, spilling, and
+  out-of-memory diagnosis
+- Run queries remotely and distributed with Polars Nanook (formerly Polars
+  Cloud / On-Prem)
 
 The skill loads automatically when a task involves Polars or Python data
-processing. It covers single-node Polars; it does not apply to Polars Cloud,
-On-Prem, distributed, or GPU workloads.
+processing. It does not cover GPU workloads.
 
 ## Install
 
@@ -75,9 +78,11 @@ skills/polars/
     ├── contexts.md               # select, with_columns, filter, group_by, over, join
     ├── expressions.md            # str, dt, list, struct, selectors, cast, when/then
     ├── insight-recipes.md        # natural-language question to query recipes
-    ├── lazy-api.md               # scan options, query plans, larger-than-memory data
+    ├── lazy-api.md               # scan options, query plans, sinks, Polars 1.x
+    ├── memory.md                 # memory budget, spilling, out-of-memory diagnosis
+    ├── nanook.md                 # Polars Nanook: remote and distributed queries
     ├── pandas-to-polars.md       # API differences and correctness traps
-    └── sql.md                    # SQL interface, dialect notes, function map
+    └── sql.md                    # SQL interface, dialect, COPY, scan_database
 ```
 
 To release, bump `version` in `plugin.json`, `.claude-plugin/plugin.json`,

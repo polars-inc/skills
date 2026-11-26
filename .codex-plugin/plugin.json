@@ -1,7 +1,7 @@
 {
   "name": "polars",
   "version": "0.4.0",
-  "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL on DataFrames, and translate pandas to Polars.",
+  "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL, handle larger-than-memory data, run queries on Polars Nanook, and translate pandas to Polars.",
   "author": {
     "name": "Polars",
     "url": "https://pola.rs"
@@ -25,7 +25,7 @@
   "interface": {
     "displayName": "Polars",
     "shortDescription": "Fast, idiomatic Polars for Python data work",
-    "longDescription": "Teaches the agent to write fast, idiomatic Polars: lazy queries with a single collect, native expressions instead of Python functions, one-shot answers to data questions, SQL on DataFrames, and pandas-to-Polars translation.",
+    "longDescription": "Teaches the agent to write fast, idiomatic Polars: lazy queries with a single collect, native expressions instead of Python functions, one-shot answers to data questions, SQL, memory limits and larger-than-memory data, remote and distributed queries on Polars Nanook, and pandas-to-Polars translation.",
     "developerName": "Polars",
     "category": "Developer Tools",
     "capabilities": [

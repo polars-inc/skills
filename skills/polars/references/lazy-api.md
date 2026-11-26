@@ -123,6 +123,9 @@ lf.sink_csv("out.csv")
 lf.sink_ndjson("out.ndjson")
 ```
 
+For the memory budget, spilling, operations that cannot stream, and
+diagnosing out-of-memory errors, read `references/memory.md`.
+
 ## On Polars 1.x
 
 This skill targets Polars 2.0. On 1.x (check `pl.__version__`), adjust:
