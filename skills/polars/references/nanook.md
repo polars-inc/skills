@@ -2,20 +2,22 @@
 
 Polars Nanook runs the same lazy Polars query on one large machine or
 distributed over a cluster: `.collect()` becomes `.remote(ctx).collect()`,
-with no other changes. It also profiles local queries. Nanook replaces the
+with no other changes. It also profiles queries that run locally with
+open-source Polars, with no cluster involved. Nanook replaces the
 products formerly called Polars Cloud (now the AWS deployment) and Polars
 On-Prem (now the Helm chart, bare-metal and Ray deployments).
 
 Use it when the user mentions Nanook, Polars Cloud, Polars On-Prem,
-`polars_nanook`, `polars_cloud`, a `ComputeContext` or `ClusterContext`, or
-when a query outgrows one machine (`references/memory.md`). Everything in
+`polars_nanook`, `polars_cloud`, a `ComputeContext` or `ClusterContext`,
+when a query outgrows one machine (`references/memory.md`), or when they
+want to know why a query is slow or where its time and memory go. Everything in
 SKILL.md still applies: build one lazy query, then execute it once.
 
 ## Contents
 
-Install and authenticate; contexts; running a remote query; results;
-distributed vs single node; data, packages and versions; memory; profiling
-local queries; old names; docs map.
+Install and authenticate; profiling local queries; contexts; running a
+remote query; results; distributed vs single node; data, packages and
+versions; memory; old names; docs map.
 
 ## Install and authenticate
 
@@ -37,6 +39,58 @@ pn.authenticate(interactive=False)    # CI: fail instead of opening a browser
 Headless jobs use a service account: set `NANOOK_CLIENT_ID` and
 `NANOOK_CLIENT_SECRET`, or `NANOOK_ACCESS_TOKEN`. A `ClusterContext` needs
 no login.
+
+## Profiling local queries
+
+`pl.Config.enable_monitoring()` is the query profiler for open-source
+Polars. The query still runs on the user's machine; Polars sends its plan
+and per-operator metrics to a Nanook workspace, where they show up in the
+*Queries* tab. Reach for it when a query is slow or uses too much memory.
+`LazyFrame.profile()` was removed in Polars 2.0, so do not suggest it.
+
+```python
+import polars as pl
+
+pl.Config.enable_monitoring()                             # every query from now on
+pl.Config.enable_monitoring(workspace="My workspace")     # add organization= if the name is ambiguous
+
+with pl.Config(enable_monitoring=True):                   # only inside the block
+    lf.collect()
+
+lf.collect(engine=pl.StreamingEngine(monitoring=True))    # one query
+```
+
+Or turn it on without changing the code:
+
+```bash
+POLARS_QUERY_MONITORING=1 POLARS_QUERY_MONITORING_WORKSPACE="My workspace" python job.py
+```
+
+What the profile shows for each query:
+
+- a timeline with planning time and run time;
+- the optimized logical plan;
+- the physical plan, with rows, morsels, CPU time and I/O time per
+  operator, updated while the query runs;
+- flags on operators: "Memory intensive", and "In-memory fallback" for
+  operations the streaming engine cannot run (`references/memory.md`).
+
+Requirements and side effects:
+
+- A Nanook account, and `polars-nanook` installed in the same environment.
+  Without the package, enabling monitoring raises an error asking to
+  install it.
+- `polars-nanook` pins one exact `polars` version, so installing it can
+  change the installed Polars. Monitoring works only on that pairing.
+- The first monitored query logs in through the browser. Log in first
+  with `nanook login`, or with `pn.authenticate(interactive=False)` plus
+  service-account variables in CI (see above).
+- Monitoring switches queries to the streaming engine, because only that
+  engine collects per-operator metrics. Turning it off does not switch
+  back; a `with pl.Config(enable_monitoring=True):` block does.
+- Everyone in the workspace can see the profiles. The plan includes column
+  names, file paths and literal values from filters, so check with the
+  user before monitoring sensitive queries.
 
 ## Contexts
 
@@ -175,18 +229,6 @@ these in order:
 3. Bigger workers, sized from the per-stage worker memory in the profile of
    a run on a smaller sample.
 
-## Profiling local queries
-
-No cluster is needed to profile local queries. The query still runs
-locally, and its plan and per-operator metrics appear in the workspace's
-*Queries* tab:
-
-```python
-pl.Config.enable_monitoring()                      # all queries; forces streaming
-pl.Config.enable_monitoring(workspace="My workspace")
-lf.collect(engine=pl.StreamingEngine(monitoring=True))   # one query
-```
-
 ## Old names
 
 Old code may use these names. They still work for now; write the new ones.
@@ -210,6 +252,7 @@ file:
 | Need | Path |
 |---|---|
 | Quickstart, local profiling | `get-started` |
+| Reading a query profile | `run/query-profile` |
 | Choose AWS / Helm / bare-metal / Ray | `get-started/choose-a-deployment` |
 | Login, service accounts | `run/authenticate` |
 | `ComputeContext` / `ClusterContext` | `run/compute-context`, `run/cluster-context` |
@@ -217,7 +260,6 @@ file:
 | Cloud storage credentials | `run/storage` |
 | Python packages on workers | `run/packages` |
 | Distributed engine, scaling, workers | `run/distributed-engine`, `run/scale-out` |
-| Query profiler | `run/query-profile` |
 | Worker memory limits | `deploy/configure/workers` |
 | Error messages | `reference/errors` |
 | Cluster releases and pinned Polars versions | `releases` |

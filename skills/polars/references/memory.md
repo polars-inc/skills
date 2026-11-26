@@ -99,7 +99,9 @@ Work through these in order:
 2. **Eager code or `engine="in-memory"`?** Make it one lazy query on the
    default engine (SKILL.md "Default stance"). `read_*` loads whole files,
    so use `scan_*`.
-3. **Fallback in the plan?** Check with `show_graph` as above.
+3. **Fallback in the plan?** Check with `show_graph` as above. A Nanook
+   profile (`pl.Config.enable_monitoring()`, `references/nanook.md`) marks
+   "In-memory fallback" and "Memory intensive" operators on the real run.
 4. **Is the detected limit right?** Run with `POLARS_VERBOSE=1` and check
    the `total memory:` line against the machine or container limit.
 5. **Is it spilling?** Run with `POLARS_OOC_LOG_METRICS=1`. No spill lines

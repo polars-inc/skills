@@ -11,7 +11,8 @@ library for Python. It teaches coding agents to write fast, idiomatic Polars:
 - Handle larger-than-memory data: memory budgets, spilling, and
   out-of-memory diagnosis
 - Run queries remotely and distributed with Polars Nanook (formerly Polars
-  Cloud / On-Prem)
+  Cloud / On-Prem), and profile local queries with
+  `pl.Config.enable_monitoring()`
 
 The skill loads automatically when a task involves Polars or Python data
 processing. It does not cover GPU workloads.
