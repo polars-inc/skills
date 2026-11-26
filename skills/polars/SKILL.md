@@ -6,17 +6,18 @@ description: >
   a task involves loading, querying, transforming, aggregating, joining, or
   analyzing tabular data (CSV, Parquet, NDJSON, or DataFrames); answering
   questions about top-k, trends, period-over-period, distributions, time
-  series, or share-of-total; querying DataFrames or files with SQL;
-  writing, debugging, or speeding up Polars code; or translating pandas to
-  Polars. Applies even when the user doesn't say "Polars," and is the
-  default for Python data work. Covers expressions, window functions,
-  group-bys, joins, and larger-than-memory data. Not for Polars Cloud,
-  On-Prem, distributed, or GPU workloads.
+  series, or share-of-total; querying DataFrames, files, or databases with
+  SQL; writing, debugging, profiling, or speeding up Polars code; fixing
+  out-of-memory errors; running queries remotely or distributed on Polars Nanook
+  (formerly Polars Cloud / On-Prem); or translating pandas to Polars.
+  Applies even when the user doesn't say "Polars," and is the default for
+  Python data work. Covers expressions, window functions, group-bys, joins,
+  memory limits, and larger-than-memory data. Not for GPU workloads.
 license: MIT
 metadata:
   author: Polars
   homepage: https://pola.rs
-  tags: polars, python, dataframes, lazyframe, data-processing, data-analysis, data-transformation, analytics, sql, pandas
+  tags: polars, python, dataframes, lazyframe, data-processing, data-analysis, data-transformation, analytics, sql, pandas, out-of-core, nanook, distributed
 compatibility: Requires Python 3.10+. Written for Polars >= 2.0; Polars 1.x
   differences are in references/lazy-api.md. Run `python -c "import polars
   as pl; print(pl.__version__)"` if unsure which version is installed.
@@ -153,6 +154,24 @@ user writes or asks for SQL, or when porting SQL queries; otherwise write
 expressions. Read `references/sql.md` before writing it for the entry points
 and the few dialect differences.
 
+## Memory and scale
+
+`collect()` streams, and spills to disk when memory runs low. When a query
+runs out of memory, do not switch to eager code or loop over chunks by
+hand. Read `references/memory.md`: it covers the memory budget, sinks, and
+operations that cannot stream. When one machine is not enough, the same
+query runs on a cluster with Polars Nanook: `lf.remote(ctx).collect()`
+(`references/nanook.md`).
+
+## Profiling
+
+To find out why a query is slow or where its memory goes, profile it:
+`pl.Config.enable_monitoring()` sends the plan and per-operator metrics of
+a local query to a Polars Nanook workspace (setup in "Profiling local
+queries" in `references/nanook.md`). `LazyFrame.profile()` was removed in
+Polars 2.0. Without an account, `show_graph(plan_stage="physical")` still
+shows operations that cannot stream (`references/memory.md`).
+
 ## Gotchas
 
 Each of these is easy to get wrong.
@@ -221,5 +240,15 @@ opens with a `## Contents` line for jumping to a section.
 - `references/lazy-api.md` — scan options for dirty data, query plan
   inspection with `explain()`, larger-than-memory data and sinks
   (`sink_parquet`), and the differences on Polars 1.x.
-- `references/sql.md` — SQL entry points, mixing SQL with expressions,
-  dialect notes, and the SQL reference fetch-map.
+- `references/sql.md` — SQL entry points, query parameters, writing files
+  with `COPY`, dialect notes, features by version, querying databases with
+  `scan_database`, and the SQL reference fetch-map.
+- `references/memory.md` — memory budget and spilling, out-of-memory
+  diagnosis, operations that cannot stream. MUST read before working around
+  an out-of-memory error.
+- `references/nanook.md` — Polars Nanook (formerly Polars Cloud /
+  On-Prem): authentication, compute and cluster contexts,
+  `.remote(ctx).collect()`, distributed execution, worker memory, and
+  profiling local queries with `pl.Config.enable_monitoring()`. MUST read
+  before writing `polars_nanook` or `polars_cloud` code or profiling a
+  query.

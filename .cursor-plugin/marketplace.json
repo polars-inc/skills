@@ -10,7 +10,7 @@
     {
       "name": "polars",
       "source": "./",
-      "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL on DataFrames, and translate pandas to Polars."
+      "description": "Official Polars skill: write fast, idiomatic lazy Polars in Python, answer data questions in one shot, run SQL, handle larger-than-memory data, run queries on Polars Nanook, and translate pandas to Polars."
     }
   ]
 }
