@@ -25,19 +25,30 @@ diagnosing out-of-memory; on a cluster.
 - The budget counts only memory Polars allocates. Python objects, NumPy
   arrays and other libraries in the same process take from the remaining
   20%.
+- **The budget is where spilling starts, not a hard cap.** The process uses
+  more than the budget: the interpreter, buffers in flight and the result
+  all sit on top of it (a 2000 MB budget measured 3081 MB peak RSS). To
+  keep a process under N GB, set the budget 10-20% below N. For a hard
+  limit, add `POLARS_OOMKILL_THRESHOLD_MB` (Polars aborts the process) or
+  run it in a cgroup with `MemoryMax` (the kernel kills it, and Polars
+  reads the cgroup limit as total memory).
 - `engine="in-memory"` never spills. Do not pass it for large data.
 
 ## Configuring it
 
 All these are environment variables **read when `polars` is imported**.
-Setting `os.environ` after `import polars` has no effect, so set them in
-the shell, the container spec, or at the top of the entry script before
-the import:
+Setting `os.environ` after `import polars` has no effect until you call
+`pl.Config.reload_env_vars()`. Set them in the shell, the container spec,
+or at the top of the entry script before the import:
 
 ```python
 import os
 os.environ["POLARS_OOC_MEMORY_BUDGET_MB"] = "8000"    # before importing polars
 import polars as pl
+
+# already imported (a notebook, a library): set, then reload
+os.environ["POLARS_OOC_MEMORY_BUDGET_MB"] = "8000"
+pl.Config.reload_env_vars()
 ```
 
 | Variable | Default | Purpose |
@@ -48,6 +59,7 @@ import polars as pl
 | `POLARS_OOC_DISK_BUDGET_MB` | `64000` | Max spilled data before the query aborts |
 | `POLARS_OOC_SPILL_COMPRESSION_LEVEL` | `1` | zstd level for spill files; `0` disables compression |
 | `POLARS_OOC_LOG_METRICS` | off | `1` prints per-operator spill stats, to confirm spilling |
+| `POLARS_OOMKILL_THRESHOLD_MB` / `_FRACTION` | off | Hard limit: Polars aborts the process (exit code 134) when memory use exceeds it |
 
 Spill files are deleted when the query no longer needs them.
 
@@ -57,8 +69,10 @@ Some operations load their whole input into memory and run it on the
 in-memory engine. A fallback is the usual reason a streaming query runs
 out of memory. Common ones:
 
-- `map_batches` and other Python UDFs over whole columns
-- `median`, `quantile`, `rank`
+- `map_batches` and other Python UDFs over whole columns. Pass
+  `is_elementwise=True` when the function works row by row, and it streams.
+- `median`, `quantile`, `rank`. `approx_quantile(0.5)` is a median that
+  streams.
 - joins with `validate=`
 - `join_asof(by=...)` on unsorted `by` columns
 - `unique(keep="last", maintain_order=True)`

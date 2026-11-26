@@ -82,7 +82,8 @@ ctx.execute("COPY orders FROM 'more_orders.csv' (HEADER true)").collect()
 ```
 
 The format comes from `(FORMAT parquet|csv|ipc|ndjson)` or the file
-extension. `SQLContext(allow_file_reads=False, allow_file_writes=False)`
+extension. The path must be a string literal, not a parameter; for a path
+built at runtime, call `.sink_parquet(path)` on the query instead. `SQLContext(allow_file_reads=False, allow_file_writes=False)`
 blocks file access when the SQL comes from untrusted users.
 
 `CREATE TABLE t AS SELECT ...`, `INSERT`, `UPDATE`, `DELETE` and
@@ -101,6 +102,8 @@ DuckDB's generated TPC-H and TPC-DS query sets run on Polars. Things to know:
   `1.1e0` for `Float64`.
 - Unlike PostgreSQL, `/` on integers returns `Float64`; use `DIV(a, b)` for
   integer division.
+- `DATE_TRUNC('month', d)` returns a `Datetime`, even for a `Date` column.
+  Write `DATE_TRUNC('month', d)::DATE` when you want a `Date`.
 - `ASOF JOIN` takes `MATCH_CONDITION (t.ts >= q.ts)`, not `ON`.
 - Select aliases can be reused later in the same `SELECT`:
   `SELECT v * 2 AS d, d + 1 AS e`.
@@ -133,16 +136,24 @@ PIVOT (SUM(revenue) FOR region IN ('EU', 'US'))
 `pl.scan_database` (Polars >= 2.2, unstable) returns a `LazyFrame` over a
 table or query in an external database. Selected columns, filters and a
 `head()` directly on the scan are pushed into the SQL sent to the database;
-`explain()` shows that SQL.
+`explain()` shows that SQL. Group-bys, joins and aggregations are **not**
+pushed down: Polars fetches the filtered rows and aggregates them itself.
 
 ```python
-lf = pl.scan_database("orders", "postgresql://user@host/db")   # table name or query
+uri = "postgresql://user@host/db"
+lf = pl.scan_database("orders", uri)          # table name or query
 (
-    lf.filter(pl.col("status") == "paid")
-    .group_by("region")
+    lf.filter(pl.col("status") == "paid")     # pushed to the database
+    .group_by("region")                       # runs in Polars
     .agg(pl.col("amount").sum())
     .collect()
 )
+
+# large table, small result: let the database aggregate
+pl.scan_database(
+    "SELECT region, SUM(amount) AS amount FROM orders WHERE status = 'paid' GROUP BY region",
+    uri,
+).collect()
 ```
 
 - Install with `pip install 'polars[database]'`. The extra adds the
